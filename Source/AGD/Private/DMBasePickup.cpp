@@ -99,6 +99,24 @@ void ADMBasePickup::ApplyPickup(ADMBaseCharacter* Character)
 
 	case EDMPickupType::Trap:
 		{
+			TArray<FDMTrapPickupOption> ValidTrapOptions;
+
+			for (const FDMTrapPickupOption& TrapOption : TrapOptions)
+			{
+				if (TrapOption.TrapClass)
+				{
+					ValidTrapOptions.Add(TrapOption);
+				}
+			}
+
+			if (ValidTrapOptions.Num() > 0)
+			{
+				const int32 RandomIndex = FMath::RandRange(0, ValidTrapOptions.Num() - 1);
+				const FDMTrapPickupOption& SelectedOption = ValidTrapOptions[RandomIndex];
+				Character->SetAvailableTrap(SelectedOption.TrapClass, SelectedOption.DisplayName);
+				break;
+			}
+
 			TArray<TSubclassOf<ADMBaseTrap>> ValidTrapClasses;
 
 			for (TSubclassOf<ADMBaseTrap> TrapClass : TrapClasses)

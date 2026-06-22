@@ -23,6 +23,18 @@ enum class EDMPickupType : uint8
 	Trap
 };
 
+USTRUCT(BlueprintType)
+struct FDMTrapPickupOption
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup|Trap")
+	TSubclassOf<ADMBaseTrap> TrapClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup|Trap")
+	FText DisplayName;
+};
+
 UCLASS()
 class AGD_API ADMBasePickup : public AActor
 {
@@ -72,6 +84,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup|Trap")
 	TArray<TSubclassOf<ADMBaseTrap>> TrapClasses;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup|Trap")
+	TArray<FDMTrapPickupOption> TrapOptions;
 
 protected:
 	UFUNCTION()

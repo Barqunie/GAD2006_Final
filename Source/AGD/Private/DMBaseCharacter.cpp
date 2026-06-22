@@ -72,6 +72,7 @@ void ADMBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ADMBaseCharacter, bIsRunning);
 	DOREPLIFETIME(ADMBaseCharacter, bSkillHidden);
 	DOREPLIFETIME(ADMBaseCharacter, DefaultTrapClass);
+	DOREPLIFETIME(ADMBaseCharacter, AvailableTrapDisplayName);
 }
 
 // Called every frame
@@ -630,7 +631,13 @@ bool ADMBaseCharacter::CanPlaceTrap() const
 
 void ADMBaseCharacter::SetAvailableTrapClass(TSubclassOf<ADMBaseTrap> NewTrapClass)
 {
+	SetAvailableTrap(NewTrapClass, FText::GetEmpty());
+}
+
+void ADMBaseCharacter::SetAvailableTrap(TSubclassOf<ADMBaseTrap> NewTrapClass, FText DisplayName)
+{
 	DefaultTrapClass = NewTrapClass;
+	AvailableTrapDisplayName = DisplayName.ToString().IsEmpty() ? ResolveTrapDisplayName(NewTrapClass) : DisplayName.ToString();
 	OnTrapClassChanged(DefaultTrapClass);
 }
 
@@ -641,39 +648,34 @@ bool ADMBaseCharacter::HasAvailableTrap() const
 
 FText ADMBaseCharacter::GetAvailableTrapDisplayName() const
 {
-	if (DefaultTrapClass == nullptr)
+	if (AvailableTrapDisplayName.IsEmpty())
 	{
-		return FText::FromString(TEXT("No Trap"));
+		const FString ResolvedName = ResolveTrapDisplayName(DefaultTrapClass);
+		return ResolvedName.IsEmpty() ? FText::FromString(TEXT("No Trap")) : FText::FromString(ResolvedName);
 	}
 
-	const ADMBaseTrap* TrapDefaults = DefaultTrapClass->GetDefaultObject<ADMBaseTrap>();
+	return FText::FromString(AvailableTrapDisplayName);
+}
+
+FString ADMBaseCharacter::ResolveTrapDisplayName(TSubclassOf<ADMBaseTrap> TrapClass) const
+{
+	if (TrapClass == nullptr)
+	{
+		return FString();
+	}
+
+	const ADMBaseTrap* TrapDefaults = TrapClass->GetDefaultObject<ADMBaseTrap>();
 	if (TrapDefaults == nullptr)
 	{
-		return FText::FromString(DefaultTrapClass->GetName());
+		return TrapClass->GetName();
 	}
 
-	const FString DisplayNameString = TrapDefaults->TrapDisplayName.ToString();
-	if (!DisplayNameString.IsEmpty() && !DisplayNameString.Equals(TEXT("Trap"), ESearchCase::IgnoreCase))
+	if (!TrapDefaults->TrapDisplayName.IsEmpty())
 	{
-		return TrapDefaults->TrapDisplayName;
+		return TrapDefaults->TrapDisplayName.ToString();
 	}
 
-	if (TrapDefaults->Damage > 0.f)
-	{
-		return FText::FromString(TEXT("Damage"));
-	}
-
-	if (TrapDefaults->bAppliesBlindness)
-	{
-		return FText::FromString(TEXT("Blind"));
-	}
-
-	if (TrapDefaults->bAppliesSlow)
-	{
-		return FText::FromString(TEXT("Slow"));
-	}
-
-	return FText::FromString(DefaultTrapClass->GetName());
+	return TrapClass->GetName();
 }
 
 bool ADMBaseCharacter::FindTrapPlacementTransform(FTransform& OutTransform) const

@@ -56,6 +56,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DM|Trap")
 	void SetAvailableTrapClass(TSubclassOf<ADMBaseTrap> NewTrapClass);
 
+	UFUNCTION(BlueprintCallable, Category = "DM|Trap")
+	void SetAvailableTrap(TSubclassOf<ADMBaseTrap> NewTrapClass, FText DisplayName);
+
 	UFUNCTION(BlueprintPure, Category = "DM|Trap")
 	bool HasAvailableTrap() const;
 
@@ -127,6 +130,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, ReplicatedUsing = OnRep_AvailableTrapClass, Category = "DM|Trap")
 	TSubclassOf<ADMBaseTrap> DefaultTrapClass;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_AvailableTrapClass, Category = "DM|Trap")
+	FString AvailableTrapDisplayName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Trap")
 	float TrapPlacementDistance = 180.f;
@@ -330,6 +336,7 @@ protected:
 	void SpawnDefaultWeapon();
 	bool CanUseSkill(float LastUseTime, float Cooldown) const;
 	bool CanPlaceTrap() const;
+	FString ResolveTrapDisplayName(TSubclassOf<ADMBaseTrap> TrapClass) const;
 	bool FindTrapPlacementTransform(FTransform& OutTransform) const;
 	void RegisterPlacedTrap(ADMBaseTrap* Trap);
 	bool CanStartSlide() const;
