@@ -26,6 +26,8 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
+	virtual void Tick(float DeltaTime) override;
+
 	UFUNCTION(BlueprintCallable, Category = "DM|Trap")
 	void SetPlacedBy(ADMBaseCharacter* NewOwnerCharacter);
 
@@ -77,6 +79,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Trap")
 	bool bCanTriggerOwner = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Trap")
+	bool bHiddenFromEnemiesUntilTriggered = true;
+
 protected:
 	UFUNCTION()
 	void OnOverlapBegin(
@@ -91,6 +96,10 @@ protected:
 	TMap<TWeakObjectPtr<ADMBaseCharacter>, float> LastTriggerTimes;
 	TWeakObjectPtr<ADMBaseCharacter> PlacedByCharacter;
 	float SpawnWorldTime = 0.f;
+	bool bTriggered = false;
+
+	void UpdateLocalVisibility();
+	bool ShouldShowTrapForLocalPlayer() const;
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastTrapTriggered(ADMBaseCharacter* Character);

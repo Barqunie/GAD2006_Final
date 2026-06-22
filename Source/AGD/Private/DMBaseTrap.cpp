@@ -5,11 +5,12 @@
 #include "DMBaseCharacter.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ADMBaseTrap::ADMBaseTrap()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	TrapDisplayName = NSLOCTEXT("DMTrap", "DefaultTrapDisplayName", "Trap");
 
@@ -42,12 +43,22 @@ void ADMBaseTrap::BeginPlay()
 	{
 		TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ADMBaseTrap::OnOverlapBegin);
 	}
+
+	UpdateLocalVisibility();
+}
+
+void ADMBaseTrap::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	UpdateLocalVisibility();
 }
 
 void ADMBaseTrap::SetPlacedBy(ADMBaseCharacter* NewOwnerCharacter)
 {
 	PlacedByCharacter = NewOwnerCharacter;
 	SetOwner(NewOwnerCharacter);
+	UpdateLocalVisibility();
 }
 
 void ADMBaseTrap::OnOverlapBegin(
@@ -92,6 +103,7 @@ void ADMBaseTrap::OnOverlapBegin(
 
 	LastTriggerTimes.Add(Character, Now);
 	ApplyTrapEffect(Character);
+	bTriggered = true;
 	MulticastTrapTriggered(Character);
 
 	if (bDestroyAfterTrigger)
@@ -125,5 +137,33 @@ void ADMBaseTrap::ApplyTrapEffect(ADMBaseCharacter* Character)
 
 void ADMBaseTrap::MulticastTrapTriggered_Implementation(ADMBaseCharacter* Character)
 {
+	bTriggered = true;
+	UpdateLocalVisibility();
 	OnTrapTriggered(Character);
+}
+
+void ADMBaseTrap::UpdateLocalVisibility()
+{
+	if (TrapMesh == nullptr)
+	{
+		return;
+	}
+
+	TrapMesh->SetVisibility(ShouldShowTrapForLocalPlayer(), true);
+}
+
+bool ADMBaseTrap::ShouldShowTrapForLocalPlayer() const
+{
+	if (!bHiddenFromEnemiesUntilTriggered || bTriggered)
+	{
+		return true;
+	}
+
+	const APawn* LocalPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (LocalPawn == nullptr)
+	{
+		return false;
+	}
+
+	return LocalPawn == PlacedByCharacter.Get();
 }
