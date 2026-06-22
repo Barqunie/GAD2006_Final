@@ -1,0 +1,369 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Character.h"
+#include "DMPlayerState.h"
+#include "DMBaseCharacter.generated.h"
+
+class ADMBaseWeapon;
+class ADMBaseTrap;
+class UAnimMontage;
+class UCameraComponent;
+class USpringArmComponent;
+
+UCLASS()
+class AGD_API ADMBaseCharacter : public ACharacter
+{
+	GENERATED_BODY()
+
+public:
+	// Sets default values for this character's properties
+	ADMBaseCharacter();
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+public:	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Combat")
+	void TakeWeaponDamage(float DamageAmount, ADMPlayerState* AttackerState);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Combat")
+	void Heal(float HealAmount);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Weapon")
+	void AddAmmo(int32 AmmoAmount);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Weapon")
+	void HandleReloadStarted();
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Weapon")
+	void HandleReloadFinished();
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Trap")
+	bool PlaceTrap();
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Trap")
+	void SetAvailableTrapClass(TSubclassOf<ADMBaseTrap> NewTrapClass);
+
+	UFUNCTION(BlueprintPure, Category = "DM|Trap")
+	bool HasAvailableTrap() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|Trap")
+	FText GetAvailableTrapDisplayName() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|Weapon|IK")
+	bool GetWeaponLeftHandIKTransform(FVector& OutLocation, FRotator& OutRotation) const;
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Effects")
+	void ApplySpeedBoost(float Multiplier, float Duration);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Effects")
+	void ApplySlow(float Multiplier, float Duration);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Effects")
+	void ApplyDamageBoost(float Multiplier, float Duration);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Effects")
+	void ApplyBlindness(float Duration);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Character")
+	void ResetAfterSpawn();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Combat")
+	void OnHealthChanged();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Combat")
+	void OnDeath();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Weapon")
+	void OnWeaponChanged();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Skills")
+	void OnSkillUsed(FName SkillName);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Effects")
+	void OnSpeedBoostStarted(float SpeedMultiplier, float JumpMultiplier, float Duration);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Effects")
+	void OnSpeedBoostEnded();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Effects")
+	void OnDamageBoostStarted(float DamageMultiplierValue, float Duration);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Effects")
+	void OnDamageBoostEnded();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Movement")
+	void OnSlideStarted();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Movement")
+	void OnSlideEnded();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Trap")
+	void OnTrapPlaced(ADMBaseTrap* PlacedTrap);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Trap")
+	void OnTrapClassChanged(TSubclassOf<ADMBaseTrap> NewTrapClass);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Camera")
+	TObjectPtr<USpringArmComponent> SpringArm;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Camera")
+	TObjectPtr<UCameraComponent> Camera;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DM|Weapon")
+	TSubclassOf<ADMBaseWeapon> DefaultWeaponClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, ReplicatedUsing = OnRep_AvailableTrapClass, Category = "DM|Trap")
+	TSubclassOf<ADMBaseTrap> DefaultTrapClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Trap")
+	float TrapPlacementDistance = 180.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Trap")
+	float TrapPlacementTraceHeight = 160.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Trap")
+	float TrapPlacementTraceDepth = 450.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Trap")
+	float TrapPlacementCooldown = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Trap")
+	int32 MaxPlacedTraps = 2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Weapon|Animation")
+	TObjectPtr<UAnimMontage> ReloadMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Weapon|Animation")
+	bool bLockMovementDuringReload = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	TObjectPtr<UAnimMontage> SlideMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	float SlideDuration = 0.65f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	float SlideCooldown = 0.85f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	float MinSlideSpeed = 550.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	float SlideStartSpeed = 1250.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	float SlideEndSpeed = 760.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	float SlideForwardBias = 0.65f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	float SlideGroundFriction = 0.35f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	float SlideBrakingDeceleration = 320.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	bool bCanFireWhileSliding = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement|Slide")
+	bool bCanAimWhileSliding = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Weapon|IK")
+	FName LeftHandIKTargetBone = TEXT("hand_r");
+
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "DM|Weapon|Runtime")
+	TObjectPtr<ADMBaseWeapon> CurrentWeapon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Combat")
+	float MaxHealth = 100.f;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "DM|Combat|Runtime")
+	float Health = 100.f;
+
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "DM|Combat|Runtime")
+	bool bIsDead = false;
+
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "DM|Combat|Runtime")
+	float DamageMultiplier = 1.0f;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Aiming, Category = "DM|Combat|Runtime")
+	bool bIsAiming = false;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Running, Category = "DM|Movement|Runtime")
+	bool bIsRunning = false;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_SkillHidden, Category = "DM|Effects|Runtime")
+	bool bSkillHidden = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DM|Weapon|Runtime")
+	bool bIsReloading = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DM|Movement|Runtime")
+	bool bIsSliding = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement")
+	float WalkSpeed = 450.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Movement")
+	float RunSpeed = 700.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Effects")
+	bool bRagdollOnDeath = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Effects")
+	float SpeedBoostJumpMultiplier = 1.35f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Camera")
+	float NormalCameraArmLength = 300.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Camera")
+	float AimCameraArmLength = 180.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Camera")
+	FVector NormalCameraSocketOffset = FVector(0.f, 60.f, 45.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Camera")
+	FVector AimCameraSocketOffset = FVector(0.f, 85.f, 35.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Camera")
+	float NormalCameraFOV = 90.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Camera")
+	float AimCameraFOV = 65.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Camera")
+	float CameraAimInterpSpeed = 12.f;
+
+protected:
+	void MoveForward(float Value);
+	void MoveRight(float Value);
+	void StartRunning();
+	void StopRunning();
+	void StartFire();
+	void StopFire();
+	void StartAiming();
+	void StopAiming();
+	void Reload();
+	void StartSlide();
+	void TryPlaceTrap();
+	void UseSkillQ();
+	void UseSkillE();
+	void Dash(float Strength);
+	void EndSlide();
+	void EndTemporaryMovementEffect();
+	void EndDamageBoost();
+
+	UFUNCTION()
+	void OnRep_Health();
+
+	UFUNCTION()
+	void OnRep_Aiming();
+
+	UFUNCTION()
+	void OnRep_Running();
+
+	UFUNCTION()
+	void OnRep_SkillHidden();
+
+	UFUNCTION()
+	void OnRep_AvailableTrapClass();
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetRunning(bool bNewRunning);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetAiming(bool bNewAiming);
+
+	UFUNCTION(Server, Reliable)
+	void ServerStartFire();
+
+	UFUNCTION(Server, Reliable)
+	void ServerStopFire();
+
+	UFUNCTION(Server, Reliable)
+	void ServerReload();
+
+	UFUNCTION(Server, Reliable)
+	void ServerStartSlide();
+
+	UFUNCTION(Server, Reliable)
+	void ServerPlaceTrap();
+
+	UFUNCTION(Server, Reliable)
+	void ServerUseSkillQ();
+
+	UFUNCTION(Server, Reliable)
+	void ServerUseSkillE();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastHandleDeath();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSpeedBoostStarted(float SpeedMultiplier, float JumpMultiplier, float Duration);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSpeedBoostEnded();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastDamageBoostStarted(float DamageMultiplierValue, float Duration);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastDamageBoostEnded();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSlideStarted(FVector_NetQuantizeNormal SlideDirection);
+
+	void SpawnDefaultWeapon();
+	bool CanUseSkill(float LastUseTime, float Cooldown) const;
+	bool CanPlaceTrap() const;
+	bool FindTrapPlacementTransform(FTransform& OutTransform) const;
+	void RegisterPlacedTrap(ADMBaseTrap* Trap);
+	bool CanStartSlide() const;
+	FVector GetSlideDirection() const;
+	void BeginSlide(const FVector& SlideDirection);
+	void UpdateSlideMovement(float DeltaTime);
+	void ApplyDeathRagdoll();
+	void ApplyAimState(bool bNewAiming);
+	void ApplyRunningState(bool bNewRunning);
+	void UpdateCameraSettings(float DeltaTime);
+	void ApplySkillVisibility();
+	void SetCharacterVisibilityForSkill(bool bVisible);
+	virtual void ExecuteSkillQ();
+	virtual void ExecuteSkillE();
+	virtual float GetSkillQCooldown() const;
+	virtual float GetSkillECooldown() const;
+	virtual float ModifyIncomingDamage(float DamageAmount) const;
+
+	FTimerHandle MovementEffectTimerHandle;
+	FTimerHandle DamageBoostTimerHandle;
+	FTimerHandle SlideTimerHandle;
+
+	float TemporaryMovementMultiplier = 1.0f;
+	float CachedBaseJumpZVelocity = 420.f;
+	float CachedGroundFriction = 8.0f;
+	float CachedBrakingDecelerationWalking = 2048.0f;
+	FVector CurrentSlideDirection = FVector::ForwardVector;
+	float SlideStartWorldTime = 0.f;
+	bool bSpeedBoostActive = false;
+	bool bJumpBoostActive = false;
+	float LastSlideTime = -100.f;
+	float LastTrapPlacementTime = -100.f;
+	TArray<TWeakObjectPtr<ADMBaseTrap>> PlacedTraps;
+
+	float LastSkillQTime = -100.f;
+	float LastSkillETime = -100.f;
+};
