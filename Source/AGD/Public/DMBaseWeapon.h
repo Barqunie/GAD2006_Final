@@ -7,6 +7,7 @@
 #include "DMBaseWeapon.generated.h"
 
 class ADMBaseCharacter;
+class ADMBulletTracer;
 class USceneComponent;
 class UStaticMeshComponent;
 
@@ -49,6 +50,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Weapon")
 	void OnShotTrace(FVector TraceStart, FVector TraceEnd, bool bHit);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Weapon")
+	void OnShotImpact(FVector ImpactPoint, FVector ImpactNormal, bool bHitCharacter, ADMBaseCharacter* HitCharacter);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Weapon")
 	void OnReloadStarted();
@@ -101,6 +105,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Weapon|Visual")
 	float MuzzleTraceOffset = 15.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Weapon|Visual")
+	TSubclassOf<ADMBulletTracer> TracerClass;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Weapon|Stats")
 	bool bUseCameraAim = false;
 
@@ -127,13 +134,14 @@ protected:
 	FVector GetCameraAimTarget() const;
 	FVector GetMuzzleStart() const;
 	FVector GetMuzzleDirection() const;
-	bool TraceShot(const FVector& Start, const FVector& Direction, float DamageAmount, FVector& OutTraceEnd);
+	bool TraceShot(const FVector& Start, const FVector& Direction, float DamageAmount, FVector& OutTraceEnd, FVector& OutImpactNormal, ADMBaseCharacter*& OutHitCharacter);
 	void AddWeaponTraceIgnoredActors(FCollisionQueryParams& Params) const;
 	bool FindFirstValidTraceHit(const FVector& Start, const FVector& End, FHitResult& OutHit) const;
 	bool ShouldIgnoreTraceActor(const AActor* Actor) const;
+	void SpawnTracer(FVector TraceStart, FVector TraceEnd);
 
 	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastWeaponFired(FVector TraceStart, FVector TraceEnd, bool bHit);
+	void MulticastWeaponFired(FVector TraceStart, FVector TraceEnd, bool bHit, FVector ImpactNormal, bool bHitCharacter, ADMBaseCharacter* HitCharacter);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastReloadStarted();

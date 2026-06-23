@@ -3,6 +3,7 @@
 
 #include "DMBaseWeapon.h"
 
+#include "DMBulletTracer.h"
 #include "DMBaseCharacter.h"
 #include "DMPlayerState.h"
 #include "Camera/CameraComponent.h"
@@ -108,22 +109,25 @@ void ADMBaseWeapon::FireOnce()
 	LastFireTime = GetWorld()->GetTimeSeconds();
 	CurrentAmmo--;
 
-	const bool bShouldTraceFromCamera = bTraceFromCameraCenter && OwningCharacter && OwningCharacter->bIsAiming;
-	const FVector RawStart = bShouldTraceFromCamera ? GetCameraAimStart() : GetMuzzleStart();
-	const FVector Direction = bShouldTraceFromCamera
-		? GetCameraAimDirection()
-		: bUseCameraAim
-			? (GetCameraAimTarget() - RawStart).GetSafeNormal()
-			: GetMuzzleDirection();
-	const FVector Start = bShouldTraceFromCamera ? RawStart : RawStart + Direction * MuzzleTraceOffset;
+	const FVector MuzzleStart = GetMuzzleStart();
+	const bool bAimToCrosshair = OwningCharacter && OwningCharacter->bIsAiming;
+	FVector Direction = bAimToCrosshair ? (GetCameraAimTarget() - MuzzleStart).GetSafeNormal() : GetMuzzleDirection();
+	if (Direction.IsNearlyZero())
+	{
+		Direction = GetMuzzleDirection();
+	}
+
+	const FVector Start = MuzzleStart + Direction * MuzzleTraceOffset;
 	const float FinalDamage = Damage * (OwningCharacter ? OwningCharacter->DamageMultiplier : 1.0f);
 
 	for (int32 PelletIndex = 0; PelletIndex < FMath::Max(1, Pellets); PelletIndex++)
 	{
 		const FVector ShotDirection = FMath::VRandCone(Direction, FMath::DegreesToRadians(SpreadDegrees));
 		FVector TraceEnd;
-		const bool bHit = TraceShot(Start, ShotDirection, FinalDamage, TraceEnd);
-		MulticastWeaponFired(Start, TraceEnd, bHit);
+		FVector ImpactNormal = -ShotDirection.GetSafeNormal();
+		ADMBaseCharacter* HitCharacter = nullptr;
+		const bool bHit = TraceShot(Start, ShotDirection, FinalDamage, TraceEnd, ImpactNormal, HitCharacter);
+		MulticastWeaponFired(Start, TraceEnd, bHit, ImpactNormal, HitCharacter != nullptr, HitCharacter);
 	}
 }
 
@@ -278,8 +282,11 @@ bool ADMBaseWeapon::ShouldIgnoreTraceActor(const AActor* Actor) const
 	return false;
 }
 
-bool ADMBaseWeapon::TraceShot(const FVector& Start, const FVector& Direction, float DamageAmount, FVector& OutTraceEnd)
+bool ADMBaseWeapon::TraceShot(const FVector& Start, const FVector& Direction, float DamageAmount, FVector& OutTraceEnd, FVector& OutImpactNormal, ADMBaseCharacter*& OutHitCharacter)
 {
+	OutImpactNormal = -Direction.GetSafeNormal();
+	OutHitCharacter = nullptr;
+
 	if (GetWorld() == nullptr)
 	{
 		OutTraceEnd = Start;
@@ -290,6 +297,7 @@ bool ADMBaseWeapon::TraceShot(const FVector& Start, const FVector& Direction, fl
 	FHitResult Hit;
 	const bool bHit = FindFirstValidTraceHit(Start, End, Hit);
 	OutTraceEnd = bHit ? Hit.ImpactPoint : End;
+	OutImpactNormal = bHit ? Hit.ImpactNormal : OutImpactNormal;
 
 	if (bDrawDebugTrace)
 	{
@@ -305,6 +313,7 @@ bool ADMBaseWeapon::TraceShot(const FVector& Start, const FVector& Direction, fl
 
 	if (HitCharacter && HitCharacter != OwningCharacter)
 	{
+		OutHitCharacter = HitCharacter;
 		ADMPlayerState* AttackerState = OwningCharacter ? OwningCharacter->GetPlayerState<ADMPlayerState>() : nullptr;
 		HitCharacter->TakeWeaponDamage(DamageAmount, AttackerState);
 	}
@@ -312,10 +321,35 @@ bool ADMBaseWeapon::TraceShot(const FVector& Start, const FVector& Direction, fl
 	return true;
 }
 
-void ADMBaseWeapon::MulticastWeaponFired_Implementation(FVector TraceStart, FVector TraceEnd, bool bHit)
+void ADMBaseWeapon::MulticastWeaponFired_Implementation(FVector TraceStart, FVector TraceEnd, bool bHit, FVector ImpactNormal, bool bHitCharacter, ADMBaseCharacter* HitCharacter)
 {
+	SpawnTracer(TraceStart, TraceEnd);
 	OnWeaponFired();
 	OnShotTrace(TraceStart, TraceEnd, bHit);
+
+	if (bHit)
+	{
+		OnShotImpact(TraceEnd, ImpactNormal.GetSafeNormal(), bHitCharacter, HitCharacter);
+	}
+}
+
+void ADMBaseWeapon::SpawnTracer(FVector TraceStart, FVector TraceEnd)
+{
+	if (TracerClass == nullptr || GetWorld() == nullptr)
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = OwningCharacter;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ADMBulletTracer* Tracer = GetWorld()->SpawnActor<ADMBulletTracer>(TracerClass, TraceStart, FRotator::ZeroRotator, SpawnParams);
+	if (Tracer)
+	{
+		Tracer->SetTrace(TraceStart, TraceEnd);
+	}
 }
 
 void ADMBaseWeapon::Reload()
