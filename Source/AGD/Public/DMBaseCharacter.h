@@ -74,6 +74,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "DM|Aim")
 	FVector GetCurrentAimPoint() const { return CurrentAimPoint; }
 
+	UFUNCTION(BlueprintPure, Category = "DM|Aim")
+	float GetCurrentAimPitch() const { return CurrentAimPitch; }
+
 	UFUNCTION(BlueprintCallable, Category = "DM|Effects")
 	void ApplySpeedBoost(float Multiplier, float Duration);
 
@@ -278,10 +281,14 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "DM|Aim")
 	FVector CurrentAimPoint = FVector::ZeroVector;
 
+	UPROPERTY(BlueprintReadOnly, Category = "DM|Aim")
+	float CurrentAimPitch = 0.f;
+
 protected:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void UpdateRotationToCrosshair(float DeltaTime);
+	void UpdateAimAnimationValues();
 	void StartRunning();
 	void StopRunning();
 	void StartFire();

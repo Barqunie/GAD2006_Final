@@ -83,6 +83,7 @@ void ADMBaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UpdateAimAnimationValues();
 	UpdateRotationToCrosshair(DeltaTime);
 	UpdateSlideMovement(DeltaTime);
 	UpdateCameraSettings(DeltaTime);
@@ -154,27 +155,36 @@ bool ADMBaseCharacter::GetCrosshairAimPoint(FVector& OutAimPoint) const
 
 	FVector TraceStart = FVector::ZeroVector;
 	FVector TraceDirection = FVector::ForwardVector;
+	bool bHasAimRay = false;
 
-	int32 ViewportX = 0;
-	int32 ViewportY = 0;
-	PC->GetViewportSize(ViewportX, ViewportY);
-
-	if (ViewportX > 0 && ViewportY > 0)
+	if (PC->IsLocalController())
 	{
-		const float ScreenX = ViewportX * 0.5f;
-		const float ScreenY = ViewportY * 0.5f;
+		int32 ViewportX = 0;
+		int32 ViewportY = 0;
+		PC->GetViewportSize(ViewportX, ViewportY);
 
-		if (!PC->DeprojectScreenPositionToWorld(ScreenX, ScreenY, TraceStart, TraceDirection))
+		if (ViewportX > 0 && ViewportY > 0)
 		{
-			return false;
+			const float ScreenX = ViewportX * 0.5f;
+			const float ScreenY = ViewportY * 0.5f;
+			bHasAimRay = PC->DeprojectScreenPositionToWorld(ScreenX, ScreenY, TraceStart, TraceDirection);
 		}
 	}
-	else if (Camera)
+
+	if (!bHasAimRay)
+	{
+		FRotator ViewRotation;
+		PC->GetPlayerViewPoint(TraceStart, ViewRotation);
+		TraceDirection = ViewRotation.Vector();
+		bHasAimRay = true;
+	}
+
+	if (!bHasAimRay && Camera)
 	{
 		TraceStart = Camera->GetComponentLocation();
 		TraceDirection = Camera->GetForwardVector();
 	}
-	else
+	else if (!bHasAimRay)
 	{
 		TraceStart = GetActorLocation() + FVector(0.f, 0.f, 50.f);
 		TraceDirection = GetActorForwardVector();
@@ -240,6 +250,11 @@ void ADMBaseCharacter::UpdateRotationToCrosshair(float DeltaTime)
 	const float InterpSpeed = FMath::Max(0.1f, AimRotationInterpSpeed);
 	const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, InterpSpeed);
 	SetActorRotation(FRotator(0.f, NewRotation.Yaw, 0.f));
+}
+
+void ADMBaseCharacter::UpdateAimAnimationValues()
+{
+	CurrentAimPitch = FRotator::NormalizeAxis(GetBaseAimRotation().Pitch);
 }
 
 void ADMBaseCharacter::StartRunning()

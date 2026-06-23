@@ -135,7 +135,7 @@ void ADMBaseWeapon::FireOnce()
 		Direction.Normalize();
 	}
 
-	const FVector Start = RawStart + Direction * MuzzleTraceOffset;
+	const FVector Start = RawStart;
 	const float FinalDamage = Damage * (OwningCharacter ? OwningCharacter->DamageMultiplier : 1.0f);
 
 	for (int32 PelletIndex = 0; PelletIndex < FMath::Max(1, Pellets); PelletIndex++)
