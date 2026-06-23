@@ -10,7 +10,9 @@
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
@@ -18,7 +20,7 @@
 // Sets default values
 ADMBaseCharacter::ADMBaseCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	bReplicates = true;
@@ -35,7 +37,8 @@ ADMBaseCharacter::ADMBaseCharacter()
 	Camera->FieldOfView = NormalCameraFOV;
 
 	bUseControllerRotationYaw = false;
-	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
@@ -57,7 +60,7 @@ void ADMBaseCharacter::BeginPlay()
 	{
 		SpawnDefaultWeapon();
 	}
-	
+
 }
 
 void ADMBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -80,6 +83,7 @@ void ADMBaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UpdateRotationToCrosshair(DeltaTime);
 	UpdateSlideMovement(DeltaTime);
 	UpdateCameraSettings(DeltaTime);
 }
@@ -132,6 +136,110 @@ void ADMBaseCharacter::MoveRight(float Value)
 	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 	const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 	AddMovementInput(Direction, Value);
+}
+
+bool ADMBaseCharacter::GetCrosshairAimPoint(FVector& OutAimPoint) const
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return false;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC == nullptr)
+	{
+		return false;
+	}
+
+	FVector TraceStart = FVector::ZeroVector;
+	FVector TraceDirection = FVector::ForwardVector;
+
+	int32 ViewportX = 0;
+	int32 ViewportY = 0;
+	PC->GetViewportSize(ViewportX, ViewportY);
+
+	if (ViewportX > 0 && ViewportY > 0)
+	{
+		const float ScreenX = ViewportX * 0.5f;
+		const float ScreenY = ViewportY * 0.5f;
+
+		if (!PC->DeprojectScreenPositionToWorld(ScreenX, ScreenY, TraceStart, TraceDirection))
+		{
+			return false;
+		}
+	}
+	else if (Camera)
+	{
+		TraceStart = Camera->GetComponentLocation();
+		TraceDirection = Camera->GetForwardVector();
+	}
+	else
+	{
+		TraceStart = GetActorLocation() + FVector(0.f, 0.f, 50.f);
+		TraceDirection = GetActorForwardVector();
+	}
+
+	TraceDirection = TraceDirection.GetSafeNormal();
+	const FVector TraceEnd = TraceStart + TraceDirection * AimTraceDistance;
+
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(DMCrosshairAimTrace), true);
+	Params.bIgnoreTouches = true;
+	Params.AddIgnoredActor(this);
+
+	if (CurrentWeapon)
+	{
+		Params.AddIgnoredActor(CurrentWeapon);
+	}
+
+	TArray<AActor*> AttachedActors;
+	GetAttachedActors(AttachedActors);
+	Params.AddIgnoredActors(AttachedActors);
+
+	FHitResult Hit;
+	const bool bHit = World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, Params);
+	OutAimPoint = bHit ? Hit.ImpactPoint : TraceEnd;
+
+	if (bDrawAimDebug)
+	{
+		DrawDebugLine(World, TraceStart, OutAimPoint, bHit ? FColor::Green : FColor::Red, false, 0.f, 0, 1.5f);
+		DrawDebugSphere(World, OutAimPoint, 10.f, 12, FColor::Yellow, false, 0.f);
+	}
+
+	return true;
+}
+
+void ADMBaseCharacter::UpdateRotationToCrosshair(float DeltaTime)
+{
+	if (!bUseCrosshairAimRotation || bIsDead || !IsLocallyControlled())
+	{
+		return;
+	}
+
+	FVector AimPoint;
+	if (!GetCrosshairAimPoint(AimPoint))
+	{
+		return;
+	}
+
+	CurrentAimPoint = AimPoint;
+
+	FVector AimDirection = AimPoint - GetActorLocation();
+	AimDirection.Z = 0.f;
+
+	if (AimDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	FRotator TargetRotation = AimDirection.Rotation();
+	TargetRotation.Yaw += AimRotationYawOffset;
+	TargetRotation.Pitch = 0.f;
+	TargetRotation.Roll = 0.f;
+
+	const float InterpSpeed = FMath::Max(0.1f, AimRotationInterpSpeed);
+	const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, InterpSpeed);
+	SetActorRotation(FRotator(0.f, NewRotation.Yaw, 0.f));
 }
 
 void ADMBaseCharacter::StartRunning()
@@ -728,9 +836,9 @@ void ADMBaseCharacter::RegisterPlacedTrap(ADMBaseTrap* Trap)
 	}
 
 	PlacedTraps.RemoveAll([](const TWeakObjectPtr<ADMBaseTrap>& ExistingTrap)
-	{
-		return !ExistingTrap.IsValid();
-	});
+		{
+			return !ExistingTrap.IsValid();
+		});
 
 	PlacedTraps.Add(Trap);
 
@@ -870,6 +978,7 @@ void ADMBaseCharacter::ApplySlow(float Multiplier, float Duration)
 	TemporaryMovementMultiplier = FMath::Clamp(Multiplier, 0.1f, 1.0f);
 	bSpeedBoostActive = false;
 	bJumpBoostActive = false;
+
 	GetCharacterMovement()->JumpZVelocity = CachedBaseJumpZVelocity;
 	ApplyRunningState(bIsRunning);
 
@@ -1069,6 +1178,19 @@ void ADMBaseCharacter::OnRep_AvailableTrapClass()
 
 void ADMBaseCharacter::ApplyAimState(bool bNewAiming)
 {
+	if (bUseCrosshairAimRotation)
+	{
+		bUseControllerRotationYaw = false;
+
+		if (GetCharacterMovement())
+		{
+			GetCharacterMovement()->bOrientRotationToMovement = false;
+			GetCharacterMovement()->bUseControllerDesiredRotation = false;
+		}
+
+		return;
+	}
+
 	bUseControllerRotationYaw = bNewAiming;
 
 	if (GetCharacterMovement())

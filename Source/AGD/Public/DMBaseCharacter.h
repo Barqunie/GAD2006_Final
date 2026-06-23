@@ -26,7 +26,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// Called every frame
@@ -67,6 +67,12 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "DM|Weapon|IK")
 	bool GetWeaponLeftHandIKTransform(FVector& OutLocation, FRotator& OutRotation) const;
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Aim")
+	bool GetCrosshairAimPoint(FVector& OutAimPoint) const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|Aim")
+	FVector GetCurrentAimPoint() const { return CurrentAimPoint; }
 
 	UFUNCTION(BlueprintCallable, Category = "DM|Effects")
 	void ApplySpeedBoost(float Multiplier, float Duration);
@@ -254,9 +260,28 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Camera")
 	float CameraAimInterpSpeed = 12.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Aim")
+	bool bUseCrosshairAimRotation = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Aim")
+	float AimTraceDistance = 50000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Aim")
+	float AimRotationInterpSpeed = 18.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Aim")
+	float AimRotationYawOffset = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Aim")
+	bool bDrawAimDebug = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DM|Aim")
+	FVector CurrentAimPoint = FVector::ZeroVector;
+
 protected:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
+	void UpdateRotationToCrosshair(float DeltaTime);
 	void StartRunning();
 	void StopRunning();
 	void StartFire();
