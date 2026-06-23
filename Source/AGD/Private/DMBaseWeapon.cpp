@@ -108,14 +108,34 @@ void ADMBaseWeapon::FireOnce()
 	LastFireTime = GetWorld()->GetTimeSeconds();
 	CurrentAmmo--;
 
-	const bool bShouldTraceFromCamera = bTraceFromCameraCenter && OwningCharacter && OwningCharacter->bIsAiming;
-	const FVector RawStart = bShouldTraceFromCamera ? GetCameraAimStart() : GetMuzzleStart();
-	const FVector Direction = bShouldTraceFromCamera
-		? GetCameraAimDirection()
-		: bUseCameraAim
-			? (GetCameraAimTarget() - RawStart).GetSafeNormal()
-			: GetMuzzleDirection();
-	const FVector Start = bShouldTraceFromCamera ? RawStart : RawStart + Direction * MuzzleTraceOffset;
+	const FVector RawStart = GetMuzzleStart();
+
+	FVector AimTarget = RawStart + GetMuzzleDirection() * Range;
+
+	if (OwningCharacter)
+	{
+		if (!OwningCharacter->GetCrosshairAimPoint(AimTarget))
+		{
+			AimTarget = GetCameraAimTarget();
+		}
+	}
+	else
+	{
+		AimTarget = GetCameraAimTarget();
+	}
+
+	FVector Direction = AimTarget - RawStart;
+
+	if (Direction.IsNearlyZero())
+	{
+		Direction = GetMuzzleDirection();
+	}
+	else
+	{
+		Direction.Normalize();
+	}
+
+	const FVector Start = RawStart + Direction * MuzzleTraceOffset;
 	const float FinalDamage = Damage * (OwningCharacter ? OwningCharacter->DamageMultiplier : 1.0f);
 
 	for (int32 PelletIndex = 0; PelletIndex < FMath::Max(1, Pellets); PelletIndex++)
