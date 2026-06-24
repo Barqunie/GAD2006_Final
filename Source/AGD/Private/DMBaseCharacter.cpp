@@ -24,6 +24,9 @@ ADMBaseCharacter::ADMBaseCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 
 	bReplicates = true;
+	SetReplicateMovement(true);
+	SetNetUpdateFrequency(66.f);
+	SetMinNetUpdateFrequency(33.f);
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
@@ -249,7 +252,18 @@ void ADMBaseCharacter::UpdateRotationToCrosshair(float DeltaTime)
 
 	const float InterpSpeed = FMath::Max(0.1f, AimRotationInterpSpeed);
 	const FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, InterpSpeed);
-	SetActorRotation(FRotator(0.f, NewRotation.Yaw, 0.f));
+	const FRotator AppliedRotation(0.f, NewRotation.Yaw, 0.f);
+	SetActorRotation(AppliedRotation);
+
+	if (!HasAuthority() && GetWorld())
+	{
+		const float Now = GetWorld()->GetTimeSeconds();
+		if (Now - LastAimRotationReplicationTime >= FMath::Max(0.01f, AimRotationReplicationInterval))
+		{
+			LastAimRotationReplicationTime = Now;
+			ServerSetAimRotation(AppliedRotation);
+		}
+	}
 }
 
 void ADMBaseCharacter::UpdateAimAnimationValues()
@@ -342,6 +356,18 @@ void ADMBaseCharacter::ServerSetAiming_Implementation(bool bNewAiming)
 	}
 
 	ApplyAimState(bIsAiming);
+}
+
+void ADMBaseCharacter::ServerSetAimRotation_Implementation(FRotator NewRotation)
+{
+	if (!bUseCrosshairAimRotation || bIsDead)
+	{
+		return;
+	}
+
+	NewRotation.Pitch = 0.f;
+	NewRotation.Roll = 0.f;
+	SetActorRotation(NewRotation);
 }
 
 void ADMBaseCharacter::StartFire()

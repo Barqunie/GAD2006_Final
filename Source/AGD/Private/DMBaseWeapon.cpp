@@ -125,9 +125,9 @@ void ADMBaseWeapon::FireOnce()
 		const FVector ShotDirection = FMath::VRandCone(Direction, FMath::DegreesToRadians(SpreadDegrees));
 		FVector TraceEnd;
 		FVector ImpactNormal = -ShotDirection.GetSafeNormal();
-		ADMBaseCharacter* HitCharacter = nullptr;
-		const bool bHit = TraceShot(Start, ShotDirection, FinalDamage, TraceEnd, ImpactNormal, HitCharacter);
-		MulticastWeaponFired(Start, TraceEnd, bHit, ImpactNormal, HitCharacter != nullptr, HitCharacter);
+		bool bHitCharacter = false;
+		const bool bHit = TraceShot(Start, ShotDirection, FinalDamage, TraceEnd, ImpactNormal, bHitCharacter);
+		MulticastWeaponFired(Start, TraceEnd, bHit, ImpactNormal, bHitCharacter);
 	}
 }
 
@@ -282,10 +282,10 @@ bool ADMBaseWeapon::ShouldIgnoreTraceActor(const AActor* Actor) const
 	return false;
 }
 
-bool ADMBaseWeapon::TraceShot(const FVector& Start, const FVector& Direction, float DamageAmount, FVector& OutTraceEnd, FVector& OutImpactNormal, ADMBaseCharacter*& OutHitCharacter)
+bool ADMBaseWeapon::TraceShot(const FVector& Start, const FVector& Direction, float DamageAmount, FVector& OutTraceEnd, FVector& OutImpactNormal, bool& bOutHitCharacter)
 {
 	OutImpactNormal = -Direction.GetSafeNormal();
-	OutHitCharacter = nullptr;
+	bOutHitCharacter = false;
 
 	if (GetWorld() == nullptr)
 	{
@@ -313,7 +313,7 @@ bool ADMBaseWeapon::TraceShot(const FVector& Start, const FVector& Direction, fl
 
 	if (HitCharacter && HitCharacter != OwningCharacter)
 	{
-		OutHitCharacter = HitCharacter;
+		bOutHitCharacter = true;
 		ADMPlayerState* AttackerState = OwningCharacter ? OwningCharacter->GetPlayerState<ADMPlayerState>() : nullptr;
 		HitCharacter->TakeWeaponDamage(DamageAmount, AttackerState);
 	}
@@ -321,7 +321,7 @@ bool ADMBaseWeapon::TraceShot(const FVector& Start, const FVector& Direction, fl
 	return true;
 }
 
-void ADMBaseWeapon::MulticastWeaponFired_Implementation(FVector TraceStart, FVector TraceEnd, bool bHit, FVector ImpactNormal, bool bHitCharacter, ADMBaseCharacter* HitCharacter)
+void ADMBaseWeapon::MulticastWeaponFired_Implementation(FVector TraceStart, FVector TraceEnd, bool bHit, FVector ImpactNormal, bool bHitCharacter)
 {
 	SpawnTracer(TraceStart, TraceEnd);
 	OnWeaponFired();
@@ -329,7 +329,7 @@ void ADMBaseWeapon::MulticastWeaponFired_Implementation(FVector TraceStart, FVec
 
 	if (bHit)
 	{
-		OnShotImpact(TraceEnd, ImpactNormal.GetSafeNormal(), bHitCharacter, HitCharacter);
+		OnShotImpact(TraceEnd, ImpactNormal.GetSafeNormal(), bHitCharacter);
 	}
 }
 

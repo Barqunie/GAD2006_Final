@@ -334,9 +334,60 @@ ESlateVisibility ADMPlayerController::GetHUDBlindnessVisibility() const
 	return bIsBlinded ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
 }
 
+ESlateVisibility ADMPlayerController::GetHUDEndGameVisibility() const
+{
+	return bEndScreenVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
+}
+
 FText ADMPlayerController::GetHUDDeathMessageText() const
 {
 	return FText::FromString(TEXT("YOU DIED"));
+}
+
+bool ADMPlayerController::DidLocalPlayerWin() const
+{
+	const ADMGameState* DMGameState = GetWorld() ? GetWorld()->GetGameState<ADMGameState>() : nullptr;
+	const ADMPlayerState* LocalState = GetDMPlayerState();
+
+	return DMGameState
+		&& LocalState
+		&& DMGameState->WinningPlayerIndex >= 0
+		&& LocalState->PlayerIndex == DMGameState->WinningPlayerIndex;
+}
+
+FText ADMPlayerController::GetHUDEndGameTitleText() const
+{
+	const ADMGameState* DMGameState = GetWorld() ? GetWorld()->GetGameState<ADMGameState>() : nullptr;
+
+	if (DMGameState == nullptr || DMGameState->WinningPlayerIndex < 0)
+	{
+		return FText::FromString(TEXT("DRAW"));
+	}
+
+	return DidLocalPlayerWin() ? FText::FromString(TEXT("VICTORY")) : FText::FromString(TEXT("DEFEAT"));
+}
+
+FText ADMPlayerController::GetHUDEndGameSubtitleText() const
+{
+	const ADMGameState* DMGameState = GetWorld() ? GetWorld()->GetGameState<ADMGameState>() : nullptr;
+
+	if (DMGameState == nullptr || DMGameState->WinningPlayerIndex < 0)
+	{
+		return FText::FromString(TEXT("No winner"));
+	}
+
+	const ADMPlayerState* WinnerState = DMGameState->GetPlayerStateByIndex(DMGameState->WinningPlayerIndex);
+	if (WinnerState == nullptr)
+	{
+		return FText::FromString(TEXT("Winner unknown"));
+	}
+
+	return FText::FromString(FString::Printf(
+		TEXT("Winner: %s   K %d  D %d  Score %d"),
+		*WinnerState->PlayerNickname,
+		WinnerState->Kills,
+		WinnerState->Deaths,
+		WinnerState->MatchScore));
 }
 
 void ADMPlayerController::ShowScoreboard()
@@ -411,6 +462,56 @@ void ADMPlayerController::ClientApplyBlindness_Implementation(float Duration)
 		GetWorld()->GetTimerManager().ClearTimer(BlindnessTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(BlindnessTimerHandle, this, &ADMPlayerController::EndBlindness, FMath::Max(0.05f, Duration), false);
 	}
+}
+
+void ADMPlayerController::ClientShowEndScreen_Implementation()
+{
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	bEndScreenVisible = true;
+
+	if (EndScreenClass && EndScreenWidget == nullptr)
+	{
+		EndScreenWidget = CreateWidget<UUserWidget>(this, EndScreenClass);
+	}
+
+	if (EndScreenWidget && !EndScreenWidget->IsInViewport())
+	{
+		EndScreenWidget->AddToViewport(EndScreenZOrder);
+	}
+
+	bShowMouseCursor = true;
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
+
+	OnEndScreenVisibilityChanged(true, DidLocalPlayerWin());
+}
+
+void ADMPlayerController::ClientHideEndScreen_Implementation()
+{
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	bEndScreenVisible = false;
+
+	if (EndScreenWidget)
+	{
+		EndScreenWidget->RemoveFromParent();
+	}
+
+	bShowMouseCursor = false;
+
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
+
+	OnEndScreenVisibilityChanged(false, false);
 }
 
 void ADMPlayerController::EndBlindness()
