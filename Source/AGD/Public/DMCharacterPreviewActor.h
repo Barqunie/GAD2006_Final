@@ -22,6 +22,9 @@ struct FDMCharacterPreviewData
 	TObjectPtr<USkeletalMesh> Mesh = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Preview")
+	FDMModularCharacterMeshes ModularMeshes;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Preview")
 	TSubclassOf<UAnimInstance> AnimClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Preview")
@@ -51,6 +54,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DM|Preview")
 	void SetPreviewClass(EDMCharacterClass CharacterClass);
 
+	UFUNCTION(BlueprintCallable, Category = "DM|Preview")
+	void SetPreviewMeshes(const FDMModularCharacterMeshes& NewMeshes);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Preview")
+	void SetPreviewMeshPart(EDMCharacterMeshPart MeshPart, USkeletalMesh* NewMesh);
+
+	UFUNCTION(BlueprintPure, Category = "DM|Preview")
+	USkeletalMeshComponent* GetPreviewMeshComponent(EDMCharacterMeshPart MeshPart) const;
+
 	UFUNCTION(BlueprintPure, Category = "DM|Preview")
 	EDMCharacterClass GetSelectedPreviewClass() const { return SelectedPreviewClass; }
 
@@ -63,6 +75,39 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview")
 	TObjectPtr<USkeletalMeshComponent> PreviewMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseTorso;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseFeet;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseHands;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseHead;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseEyes;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseTeeth;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> HairstyleF;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseLegs;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> OutfitLower;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> OutfitShoes;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Preview|Modular")
+	TObjectPtr<USkeletalMeshComponent> OutfitUpper;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Preview")
 	EDMCharacterClass InitialCharacterClass = EDMCharacterClass::Sprit;

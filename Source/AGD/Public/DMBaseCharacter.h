@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "DMTypes.h"
 #include "DMPlayerState.h"
 #include "DMBaseCharacter.generated.h"
 
@@ -11,6 +12,8 @@ class ADMBaseWeapon;
 class ADMBaseTrap;
 class UAnimMontage;
 class UCameraComponent;
+class USkeletalMesh;
+class USkeletalMeshComponent;
 class USpringArmComponent;
 
 UCLASS()
@@ -25,6 +28,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -92,6 +96,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DM|Character")
 	void ResetAfterSpawn();
 
+	UFUNCTION(BlueprintCallable, Category = "DM|Character|Modular")
+	void SetModularCharacterMeshes(const FDMModularCharacterMeshes& NewMeshes);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Character|Modular")
+	void SetModularMeshPart(EDMCharacterMeshPart MeshPart, USkeletalMesh* NewMesh);
+
+	UFUNCTION(BlueprintPure, Category = "DM|Character|Modular")
+	USkeletalMeshComponent* GetModularMeshComponent(EDMCharacterMeshPart MeshPart) const;
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Combat")
 	void OnHealthChanged();
 
@@ -128,11 +141,53 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Trap")
 	void OnTrapClassChanged(TSubclassOf<ADMBaseTrap> NewTrapClass);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Character|Modular")
+	void OnModularCharacterMeshesChanged();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Camera")
 	TObjectPtr<USpringArmComponent> SpringArm;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Camera")
 	TObjectPtr<UCameraComponent> Camera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseTorso;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseFeet;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseHands;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseHead;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseEyes;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseTeeth;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> HairstyleF;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> BaseLegs;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> OutfitLower;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> OutfitShoes;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMeshComponent> OutfitUpper;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	FDMModularCharacterMeshes DefaultModularMeshes;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	bool bHideMainMeshWhenUsingModularMeshes = true;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DM|Weapon")
 	TSubclassOf<ADMBaseWeapon> DefaultWeaponClass;

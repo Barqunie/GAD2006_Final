@@ -10,7 +10,9 @@
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Engine/SkeletalMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -45,12 +47,44 @@ ADMBaseCharacter::ADMBaseCharacter()
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+	auto CreateModularMeshComponent = [this](const TCHAR* ComponentName)
+	{
+		USkeletalMeshComponent* ModularComponent = CreateDefaultSubobject<USkeletalMeshComponent>(ComponentName);
+		ModularComponent->SetupAttachment(GetMesh());
+		ModularComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ModularComponent->SetGenerateOverlapEvents(false);
+		ModularComponent->SetCanEverAffectNavigation(false);
+		ModularComponent->SetLeaderPoseComponent(GetMesh());
+		return ModularComponent;
+	};
+
+	BaseTorso = CreateModularMeshComponent(TEXT("Base_Torso"));
+	BaseFeet = CreateModularMeshComponent(TEXT("Base_Feet"));
+	BaseHands = CreateModularMeshComponent(TEXT("Base_Hands"));
+	BaseHead = CreateModularMeshComponent(TEXT("Base_Head"));
+	BaseEyes = CreateModularMeshComponent(TEXT("Base_Eyes"));
+	BaseTeeth = CreateModularMeshComponent(TEXT("Base_Teeth"));
+	HairstyleF = CreateModularMeshComponent(TEXT("Hairstyle_F"));
+	BaseLegs = CreateModularMeshComponent(TEXT("Base_Legs"));
+	OutfitLower = CreateModularMeshComponent(TEXT("Outfit_Lower"));
+	OutfitShoes = CreateModularMeshComponent(TEXT("Outfit_Shoes"));
+	OutfitUpper = CreateModularMeshComponent(TEXT("Outfit_Upper"));
+}
+
+void ADMBaseCharacter::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	SetModularCharacterMeshes(DefaultModularMeshes);
 }
 
 // Called when the game starts or when spawned
 void ADMBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SetModularCharacterMeshes(DefaultModularMeshes);
 
 	if (GetCharacterMovement())
 	{
@@ -64,6 +98,84 @@ void ADMBaseCharacter::BeginPlay()
 		SpawnDefaultWeapon();
 	}
 
+}
+
+void ADMBaseCharacter::SetModularCharacterMeshes(const FDMModularCharacterMeshes& NewMeshes)
+{
+	SetModularMeshPart(EDMCharacterMeshPart::Torso, NewMeshes.Torso);
+	SetModularMeshPart(EDMCharacterMeshPart::Feet, NewMeshes.Feet);
+	SetModularMeshPart(EDMCharacterMeshPart::Hands, NewMeshes.Hands);
+	SetModularMeshPart(EDMCharacterMeshPart::Head, NewMeshes.Head);
+	SetModularMeshPart(EDMCharacterMeshPart::Eyes, NewMeshes.Eyes);
+	SetModularMeshPart(EDMCharacterMeshPart::Teeth, NewMeshes.Teeth);
+	SetModularMeshPart(EDMCharacterMeshPart::Hair, NewMeshes.Hair);
+	SetModularMeshPart(EDMCharacterMeshPart::Legs, NewMeshes.Legs);
+	SetModularMeshPart(EDMCharacterMeshPart::OutfitLower, NewMeshes.OutfitLower);
+	SetModularMeshPart(EDMCharacterMeshPart::OutfitShoes, NewMeshes.OutfitShoes);
+	SetModularMeshPart(EDMCharacterMeshPart::OutfitUpper, NewMeshes.OutfitUpper);
+
+	if (GetMesh())
+	{
+		const bool bHasModularMesh =
+			NewMeshes.Torso != nullptr ||
+			NewMeshes.Feet != nullptr ||
+			NewMeshes.Hands != nullptr ||
+			NewMeshes.Head != nullptr ||
+			NewMeshes.Eyes != nullptr ||
+			NewMeshes.Teeth != nullptr ||
+			NewMeshes.Hair != nullptr ||
+			NewMeshes.Legs != nullptr ||
+			NewMeshes.OutfitLower != nullptr ||
+			NewMeshes.OutfitShoes != nullptr ||
+			NewMeshes.OutfitUpper != nullptr;
+
+		GetMesh()->SetVisibility(!bHideMainMeshWhenUsingModularMeshes || !bHasModularMesh, false);
+	}
+
+	OnModularCharacterMeshesChanged();
+}
+
+void ADMBaseCharacter::SetModularMeshPart(EDMCharacterMeshPart MeshPart, USkeletalMesh* NewMesh)
+{
+	USkeletalMeshComponent* MeshComponent = GetModularMeshComponent(MeshPart);
+	if (MeshComponent == nullptr)
+	{
+		return;
+	}
+
+	MeshComponent->SetSkeletalMesh(NewMesh);
+	MeshComponent->SetLeaderPoseComponent(GetMesh());
+}
+
+USkeletalMeshComponent* ADMBaseCharacter::GetModularMeshComponent(EDMCharacterMeshPart MeshPart) const
+{
+	switch (MeshPart)
+	{
+	case EDMCharacterMeshPart::Torso:
+		return BaseTorso;
+	case EDMCharacterMeshPart::Feet:
+		return BaseFeet;
+	case EDMCharacterMeshPart::Hands:
+		return BaseHands;
+	case EDMCharacterMeshPart::Head:
+		return BaseHead;
+	case EDMCharacterMeshPart::Eyes:
+		return BaseEyes;
+	case EDMCharacterMeshPart::Teeth:
+		return BaseTeeth;
+	case EDMCharacterMeshPart::Hair:
+		return HairstyleF;
+	case EDMCharacterMeshPart::Legs:
+		return BaseLegs;
+	case EDMCharacterMeshPart::OutfitLower:
+		return OutfitLower;
+	case EDMCharacterMeshPart::OutfitShoes:
+		return OutfitShoes;
+	case EDMCharacterMeshPart::OutfitUpper:
+		return OutfitUpper;
+	default:
+		return nullptr;
+	}
 }
 
 void ADMBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

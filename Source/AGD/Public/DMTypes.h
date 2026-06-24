@@ -5,11 +5,68 @@
 #include "CoreMinimal.h"
 #include "DMTypes.generated.h"
 
+class USkeletalMesh;
+
 UENUM(BlueprintType)
 enum class EDMCharacterClass : uint8
 {
 	Sprit,
 	Ash
+};
+
+UENUM(BlueprintType)
+enum class EDMCharacterMeshPart : uint8
+{
+	Torso,
+	Feet,
+	Hands,
+	Head,
+	Eyes,
+	Teeth,
+	Hair,
+	Legs,
+	OutfitLower,
+	OutfitShoes,
+	OutfitUpper
+};
+
+USTRUCT(BlueprintType)
+struct FDMModularCharacterMeshes
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> Torso = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> Feet = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> Hands = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> Head = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> Eyes = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> Teeth = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> Hair = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> Legs = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> OutfitLower = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> OutfitShoes = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
+	TObjectPtr<USkeletalMesh> OutfitUpper = nullptr;
 };
 
 USTRUCT(BlueprintType)
