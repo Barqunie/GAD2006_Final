@@ -21,6 +21,8 @@ ADMCharacterPreviewActor::ADMCharacterPreviewActor()
 	PreviewMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	PreviewMesh->SetGenerateOverlapEvents(false);
 	PreviewMesh->SetCanEverAffectNavigation(false);
+	PreviewMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	PreviewMesh->SetUpdateAnimationInEditor(true);
 
 	auto CreateModularMeshComponent = [this](const TCHAR* ComponentName)
 	{
@@ -29,7 +31,10 @@ ADMCharacterPreviewActor::ADMCharacterPreviewActor()
 		ModularComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		ModularComponent->SetGenerateOverlapEvents(false);
 		ModularComponent->SetCanEverAffectNavigation(false);
-		ModularComponent->SetLeaderPoseComponent(PreviewMesh);
+		ModularComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+		ModularComponent->SetUpdateAnimationInEditor(true);
+		ModularComponent->bUseAttachParentBound = true;
+		ModularComponent->SetLeaderPoseComponent(PreviewMesh, true, true);
 		return ModularComponent;
 	};
 
@@ -157,7 +162,8 @@ void ADMCharacterPreviewActor::SetPreviewMeshPart(EDMCharacterMeshPart MeshPart,
 	}
 
 	MeshComponent->SetSkeletalMesh(NewMesh);
-	MeshComponent->SetLeaderPoseComponent(PreviewMesh);
+	MeshComponent->SetLeaderPoseComponent(PreviewMesh, true, true);
+	MeshComponent->RefreshBoneTransforms();
 }
 
 USkeletalMeshComponent* ADMCharacterPreviewActor::GetPreviewMeshComponent(EDMCharacterMeshPart MeshPart) const
@@ -199,7 +205,12 @@ void ADMCharacterPreviewActor::ApplyPreviewData(const FDMCharacterPreviewData& P
 	}
 
 	PreviewMesh->SetSkeletalMesh(PreviewData.Mesh);
-	PreviewMesh->SetAnimInstanceClass(PreviewData.AnimClass);
+	if (PreviewData.AnimClass != nullptr)
+	{
+		PreviewMesh->SetAnimInstanceClass(PreviewData.AnimClass);
+	}
+	PreviewMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	PreviewMesh->SetUpdateAnimationInEditor(true);
 	PreviewMesh->SetRelativeLocation(PreviewData.RelativeLocation);
 	PreviewMesh->SetRelativeRotation(PreviewData.RelativeRotation);
 	PreviewMesh->SetRelativeScale3D(PreviewData.RelativeScale);

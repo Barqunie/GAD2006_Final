@@ -47,6 +47,8 @@ ADMBaseCharacter::ADMBaseCharacter()
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	GetMesh()->SetUpdateAnimationInEditor(true);
 
 	auto CreateModularMeshComponent = [this](const TCHAR* ComponentName)
 	{
@@ -55,7 +57,10 @@ ADMBaseCharacter::ADMBaseCharacter()
 		ModularComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		ModularComponent->SetGenerateOverlapEvents(false);
 		ModularComponent->SetCanEverAffectNavigation(false);
-		ModularComponent->SetLeaderPoseComponent(GetMesh());
+		ModularComponent->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+		ModularComponent->SetUpdateAnimationInEditor(true);
+		ModularComponent->bUseAttachParentBound = true;
+		ModularComponent->SetLeaderPoseComponent(GetMesh(), true, true);
 		return ModularComponent;
 	};
 
@@ -144,7 +149,8 @@ void ADMBaseCharacter::SetModularMeshPart(EDMCharacterMeshPart MeshPart, USkelet
 	}
 
 	MeshComponent->SetSkeletalMesh(NewMesh);
-	MeshComponent->SetLeaderPoseComponent(GetMesh());
+	MeshComponent->SetLeaderPoseComponent(GetMesh(), true, true);
+	MeshComponent->RefreshBoneTransforms();
 }
 
 USkeletalMeshComponent* ADMBaseCharacter::GetModularMeshComponent(EDMCharacterMeshPart MeshPart) const
