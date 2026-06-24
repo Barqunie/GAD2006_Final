@@ -87,10 +87,22 @@ public:
 	ESlateVisibility GetHUDBlindnessVisibility() const;
 
 	UFUNCTION(BlueprintPure, Category = "DM|HUD")
+	ESlateVisibility GetHUDEndGameVisibility() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|HUD")
 	bool IsBlinded() const { return bIsBlinded; }
 
 	UFUNCTION(BlueprintPure, Category = "DM|HUD")
 	FText GetHUDDeathMessageText() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|HUD")
+	FText GetHUDEndGameTitleText() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|HUD")
+	FText GetHUDEndGameSubtitleText() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|HUD")
+	bool DidLocalPlayerWin() const;
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DM|HUD")
 	void OnScoreboardVisibilityChanged(bool bVisible);
@@ -100,6 +112,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Effects")
 	void OnBlindnessEnded();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|HUD")
+	void OnEndScreenVisibilityChanged(bool bVisible, bool bVictory);
 
 	UFUNCTION(Server, Reliable)
 	void ServerSubmitPlayerInfo(FDMPlayerInfo Info);
@@ -119,12 +134,27 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientApplyBlindness(float Duration);
 
+	UFUNCTION(Client, Reliable)
+	void ClientShowEndScreen();
+
+	UFUNCTION(Client, Reliable)
+	void ClientHideEndScreen();
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DM|HUD")
 	TSubclassOf<UUserWidget> MatchHUDClass;
 
 	UPROPERTY(BlueprintReadOnly, Category = "DM|HUD")
 	TObjectPtr<UUserWidget> MatchHUDWidget;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DM|HUD")
+	TSubclassOf<UUserWidget> EndScreenClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DM|HUD")
+	int32 EndScreenZOrder = 100;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DM|HUD")
+	TObjectPtr<UUserWidget> EndScreenWidget;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DM|Effects")
 	TSubclassOf<UUserWidget> BlindnessWidgetClass;
@@ -144,5 +174,6 @@ private:
 
 	bool bScoreboardVisible = false;
 	bool bIsBlinded = false;
+	bool bEndScreenVisible = false;
 	FTimerHandle BlindnessTimerHandle;
 };

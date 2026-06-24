@@ -273,6 +273,9 @@ public:
 	float AimRotationInterpSpeed = 18.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Aim")
+	float AimRotationReplicationInterval = 0.04f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Aim")
 	float AimRotationYawOffset = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Aim")
@@ -325,6 +328,9 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerSetAiming(bool bNewAiming);
+
+	UFUNCTION(Server, Unreliable)
+	void ServerSetAimRotation(FRotator NewRotation);
 
 	UFUNCTION(Server, Reliable)
 	void ServerStartFire();
@@ -401,6 +407,7 @@ protected:
 	bool bJumpBoostActive = false;
 	float LastSlideTime = -100.f;
 	float LastTrapPlacementTime = -100.f;
+	float LastAimRotationReplicationTime = -100.f;
 	TArray<TWeakObjectPtr<ADMBaseTrap>> PlacedTraps;
 
 	float LastSkillQTime = -100.f;

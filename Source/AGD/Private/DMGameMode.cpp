@@ -268,6 +268,14 @@ void ADMGameMode::FinishMatch(ADMPlayerState* WinnerState)
 	DMGameState->WinningPlayerIndex = WinnerState ? WinnerState->PlayerIndex : -1;
 	DMGameState->LeaderPlayerIndex = DMGameState->WinningPlayerIndex;
 	DMGameState->OnVictory();
+
+	for (APlayerController* Player : ConnectedPlayers)
+	{
+		if (ADMPlayerController* DMController = Cast<ADMPlayerController>(Player))
+		{
+			DMController->ClientShowEndScreen();
+		}
+	}
 }
 
 void ADMGameMode::RestartMatch()
@@ -279,6 +287,11 @@ void ADMGameMode::RestartMatch()
 		if (Player == nullptr)
 		{
 			continue;
+		}
+
+		if (ADMPlayerController* DMController = Cast<ADMPlayerController>(Player))
+		{
+			DMController->ClientHideEndScreen();
 		}
 
 		ADMPlayerState* State = Player->GetPlayerState<ADMPlayerState>();
