@@ -19,6 +19,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lobby")
 	void SetPlayerInfo(FDMPlayerInfo Info);
 
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void SetSelectedOutfitIndex(int32 OutfitIndex);
+
+	UFUNCTION(BlueprintPure, Category = "Lobby")
+	int32 GetSelectedOutfitIndex() const { return PlayerInfo.OutfitIndex; }
+
 	UFUNCTION(BlueprintCallable, Category = "Network")
 	void Host(const FString& MapName, FDMPlayerInfo Info);
 

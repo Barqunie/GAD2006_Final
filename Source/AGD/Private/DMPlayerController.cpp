@@ -61,6 +61,8 @@ void ADMPlayerController::SubmitLocalPlayerInfo()
 
 void ADMPlayerController::SetAndSubmitPlayerInfo(FDMPlayerInfo Info)
 {
+	Info.OutfitIndex = FMath::Max(0, Info.OutfitIndex);
+
 	UDMGameInstance* DMGameInstance = GetGameInstance<UDMGameInstance>();
 
 	if (DMGameInstance)
@@ -75,6 +77,14 @@ void ADMPlayerController::SelectCharacterClass(EDMCharacterClass CharacterClass)
 {
 	FDMPlayerInfo Info = GetLocalPlayerInfo();
 	Info.CharacterClass = CharacterClass;
+
+	SetAndSubmitPlayerInfo(Info);
+}
+
+void ADMPlayerController::SelectOutfitIndex(int32 OutfitIndex)
+{
+	FDMPlayerInfo Info = GetLocalPlayerInfo();
+	Info.OutfitIndex = FMath::Max(0, OutfitIndex);
 
 	SetAndSubmitPlayerInfo(Info);
 }
@@ -146,6 +156,11 @@ void ADMPlayerController::ServerSubmitPlayerInfo_Implementation(FDMPlayerInfo In
 	if (DMGameMode)
 	{
 		DMGameMode->RefreshPlayerPawnForSelectedClass(this);
+	}
+
+	if (ADMBaseCharacter* DMCharacter = Cast<ADMBaseCharacter>(GetPawn()))
+	{
+		DMCharacter->ApplyPlayerCustomizationFromPlayerState();
 	}
 }
 

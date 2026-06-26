@@ -35,6 +35,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Replicated)
 	EDMCharacterClass CharacterClass = EDMCharacterClass::Sprit;
 
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	int32 OutfitIndex = 0;
+
 	UFUNCTION(BlueprintCallable)
 	void ResetMatchStats();
 

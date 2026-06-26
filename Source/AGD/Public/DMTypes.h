@@ -70,6 +70,21 @@ struct FDMModularCharacterMeshes
 };
 
 USTRUCT(BlueprintType)
+struct FDMOutfitMeshes
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Outfit")
+	TObjectPtr<USkeletalMesh> Lower = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Outfit")
+	TObjectPtr<USkeletalMesh> Shoes = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Outfit")
+	TObjectPtr<USkeletalMesh> Upper = nullptr;
+};
+
+USTRUCT(BlueprintType)
 struct FDMPlayerInfo
 {
 	GENERATED_BODY()
@@ -79,6 +94,9 @@ struct FDMPlayerInfo
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EDMCharacterClass CharacterClass = EDMCharacterClass::Sprit;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 OutfitIndex = 0;
 };
 
 USTRUCT(BlueprintType)

@@ -25,6 +25,9 @@ struct FDMCharacterPreviewData
 	FDMModularCharacterMeshes ModularMeshes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Preview")
+	TArray<FDMOutfitMeshes> OutfitPresets;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Preview")
 	TSubclassOf<UAnimInstance> AnimClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Preview")
@@ -60,11 +63,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DM|Preview")
 	void SetPreviewMeshPart(EDMCharacterMeshPart MeshPart, USkeletalMesh* NewMesh);
 
+	UFUNCTION(BlueprintCallable, Category = "DM|Preview")
+	void SetPreviewOutfitIndex(int32 OutfitIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Preview")
+	int32 StepPreviewOutfit(int32 Direction);
+
 	UFUNCTION(BlueprintPure, Category = "DM|Preview")
 	USkeletalMeshComponent* GetPreviewMeshComponent(EDMCharacterMeshPart MeshPart) const;
 
 	UFUNCTION(BlueprintPure, Category = "DM|Preview")
 	EDMCharacterClass GetSelectedPreviewClass() const { return SelectedPreviewClass; }
+
+	UFUNCTION(BlueprintPure, Category = "DM|Preview")
+	int32 GetSelectedPreviewOutfitIndex() const { return SelectedPreviewOutfitIndex; }
+
+	UFUNCTION(BlueprintPure, Category = "DM|Preview")
+	int32 GetPreviewOutfitCount() const;
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Preview")
 	void OnPreviewClassChanged(EDMCharacterClass CharacterClass);
@@ -126,6 +141,9 @@ protected:
 
 private:
 	void ApplyPreviewData(const FDMCharacterPreviewData& PreviewData);
+	void ApplyPreviewOutfit(const FDMCharacterPreviewData& PreviewData, int32 OutfitIndex);
+	const FDMCharacterPreviewData& GetSelectedPreviewData() const;
 
 	EDMCharacterClass SelectedPreviewClass = EDMCharacterClass::Sprit;
+	int32 SelectedPreviewOutfitIndex = 0;
 };

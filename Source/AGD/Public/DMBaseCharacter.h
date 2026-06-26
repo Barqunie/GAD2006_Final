@@ -102,6 +102,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DM|Character|Modular")
 	void SetModularMeshPart(EDMCharacterMeshPart MeshPart, USkeletalMesh* NewMesh);
 
+	UFUNCTION(BlueprintCallable, Category = "DM|Character|Outfit")
+	void ApplyOutfitByIndex(int32 OutfitIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Character|Outfit")
+	void ApplyPlayerCustomizationFromPlayerState();
+
+	UFUNCTION(BlueprintPure, Category = "DM|Character|Outfit")
+	int32 GetSelectedOutfitIndex() const { return SelectedOutfitIndex; }
+
+	UFUNCTION(BlueprintPure, Category = "DM|Character|Outfit")
+	int32 GetOutfitCount() const { return OutfitPresets.Num(); }
+
 	UFUNCTION(BlueprintPure, Category = "DM|Character|Modular")
 	USkeletalMeshComponent* GetModularMeshComponent(EDMCharacterMeshPart MeshPart) const;
 
@@ -185,6 +197,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
 	FDMModularCharacterMeshes DefaultModularMeshes;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Outfit")
+	TArray<FDMOutfitMeshes> OutfitPresets;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Character|Modular")
 	bool bHideMainMeshWhenUsingModularMeshes = true;
@@ -426,6 +441,9 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSlideStarted(FVector_NetQuantizeNormal SlideDirection);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastApplyOutfitIndex(int32 OutfitIndex);
+
 	void SpawnDefaultWeapon();
 	bool CanUseSkill(float LastUseTime, float Cooldown) const;
 	bool CanPlaceTrap() const;
@@ -467,4 +485,5 @@ protected:
 
 	float LastSkillQTime = -100.f;
 	float LastSkillETime = -100.f;
+	int32 SelectedOutfitIndex = 0;
 };

@@ -90,6 +90,7 @@ void ADMBaseCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	SetModularCharacterMeshes(DefaultModularMeshes);
+	ApplyPlayerCustomizationFromPlayerState();
 
 	if (GetCharacterMovement())
 	{
@@ -151,6 +152,38 @@ void ADMBaseCharacter::SetModularMeshPart(EDMCharacterMeshPart MeshPart, USkelet
 	MeshComponent->SetSkeletalMesh(NewMesh);
 	MeshComponent->SetLeaderPoseComponent(GetMesh(), true, true);
 	MeshComponent->RefreshBoneTransforms();
+}
+
+void ADMBaseCharacter::ApplyOutfitByIndex(int32 OutfitIndex)
+{
+	if (OutfitPresets.Num() <= 0)
+	{
+		SelectedOutfitIndex = 0;
+		return;
+	}
+
+	SelectedOutfitIndex = FMath::Clamp(OutfitIndex, 0, OutfitPresets.Num() - 1);
+	const FDMOutfitMeshes& Outfit = OutfitPresets[SelectedOutfitIndex];
+
+	SetModularMeshPart(EDMCharacterMeshPart::OutfitLower, Outfit.Lower);
+	SetModularMeshPart(EDMCharacterMeshPart::OutfitShoes, Outfit.Shoes);
+	SetModularMeshPart(EDMCharacterMeshPart::OutfitUpper, Outfit.Upper);
+
+	OnModularCharacterMeshesChanged();
+}
+
+void ADMBaseCharacter::ApplyPlayerCustomizationFromPlayerState()
+{
+	const ADMPlayerState* DMState = GetPlayerState<ADMPlayerState>();
+	const int32 OutfitIndex = DMState ? DMState->OutfitIndex : 0;
+
+	if (HasAuthority())
+	{
+		MulticastApplyOutfitIndex(OutfitIndex);
+		return;
+	}
+
+	ApplyOutfitByIndex(OutfitIndex);
 }
 
 USkeletalMeshComponent* ADMBaseCharacter::GetModularMeshComponent(EDMCharacterMeshPart MeshPart) const
@@ -1294,6 +1327,11 @@ void ADMBaseCharacter::MulticastDamageBoostEnded_Implementation()
 void ADMBaseCharacter::MulticastSlideStarted_Implementation(FVector_NetQuantizeNormal SlideDirection)
 {
 	BeginSlide(SlideDirection);
+}
+
+void ADMBaseCharacter::MulticastApplyOutfitIndex_Implementation(int32 OutfitIndex)
+{
+	ApplyOutfitByIndex(OutfitIndex);
 }
 
 void ADMBaseCharacter::ApplyDeathRagdoll()

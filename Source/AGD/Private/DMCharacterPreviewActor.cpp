@@ -75,6 +75,7 @@ ADMCharacterPreviewActor::ADMCharacterPreviewActor()
 	SpritPreview.ModularMeshes.OutfitLower = FemaleOutfitLowerMesh.Object;
 	SpritPreview.ModularMeshes.OutfitShoes = FemaleOutfitShoesMesh.Object;
 	SpritPreview.ModularMeshes.OutfitUpper = FemaleOutfitUpperMesh.Object;
+	SpritPreview.OutfitPresets.Add({ FemaleOutfitLowerMesh.Object, FemaleOutfitShoesMesh.Object, FemaleOutfitUpperMesh.Object });
 
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MaleBodyCombinedMesh(TEXT("/Game/CoreC/02BaseBody/SKM/SKM_CoreC_M_Base_Body_Combined.SKM_CoreC_M_Base_Body_Combined"));
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MaleTorsoMesh(TEXT("/Game/CoreC/02BaseBody/SKM/SKM_CoreC_M_Base_Torso.SKM_CoreC_M_Base_Torso"));
@@ -101,6 +102,7 @@ ADMCharacterPreviewActor::ADMCharacterPreviewActor()
 	AshPreview.ModularMeshes.OutfitLower = MaleOutfitLowerMesh.Object;
 	AshPreview.ModularMeshes.OutfitShoes = MaleOutfitShoesMesh.Object;
 	AshPreview.ModularMeshes.OutfitUpper = MaleOutfitUpperMesh.Object;
+	AshPreview.OutfitPresets.Add({ MaleOutfitLowerMesh.Object, MaleOutfitShoesMesh.Object, MaleOutfitUpperMesh.Object });
 }
 
 void ADMCharacterPreviewActor::BeginPlay()
@@ -135,6 +137,7 @@ void ADMCharacterPreviewActor::SetPreviewClass(EDMCharacterClass CharacterClass)
 		break;
 	}
 
+	SetPreviewOutfitIndex(SelectedPreviewOutfitIndex);
 	OnPreviewClassChanged(CharacterClass);
 }
 
@@ -166,6 +169,25 @@ void ADMCharacterPreviewActor::SetPreviewMeshPart(EDMCharacterMeshPart MeshPart,
 	MeshComponent->RefreshBoneTransforms();
 }
 
+void ADMCharacterPreviewActor::SetPreviewOutfitIndex(int32 OutfitIndex)
+{
+	ApplyPreviewOutfit(GetSelectedPreviewData(), OutfitIndex);
+}
+
+int32 ADMCharacterPreviewActor::StepPreviewOutfit(int32 Direction)
+{
+	const int32 OutfitCount = GetPreviewOutfitCount();
+	if (OutfitCount <= 0)
+	{
+		SelectedPreviewOutfitIndex = 0;
+		return SelectedPreviewOutfitIndex;
+	}
+
+	const int32 WrappedIndex = (SelectedPreviewOutfitIndex + Direction + OutfitCount) % OutfitCount;
+	SetPreviewOutfitIndex(WrappedIndex);
+	return SelectedPreviewOutfitIndex;
+}
+
 USkeletalMeshComponent* ADMCharacterPreviewActor::GetPreviewMeshComponent(EDMCharacterMeshPart MeshPart) const
 {
 	switch (MeshPart)
@@ -195,6 +217,11 @@ USkeletalMeshComponent* ADMCharacterPreviewActor::GetPreviewMeshComponent(EDMCha
 	default:
 		return nullptr;
 	}
+}
+
+int32 ADMCharacterPreviewActor::GetPreviewOutfitCount() const
+{
+	return GetSelectedPreviewData().OutfitPresets.Num();
 }
 
 void ADMCharacterPreviewActor::ApplyPreviewData(const FDMCharacterPreviewData& PreviewData)
@@ -236,4 +263,25 @@ void ADMCharacterPreviewActor::ApplyPreviewData(const FDMCharacterPreviewData& P
 	{
 		PreviewMesh->SetMaterial(MaterialIndex, PreviewData.Materials[MaterialIndex]);
 	}
+}
+
+void ADMCharacterPreviewActor::ApplyPreviewOutfit(const FDMCharacterPreviewData& PreviewData, int32 OutfitIndex)
+{
+	if (PreviewData.OutfitPresets.Num() <= 0)
+	{
+		SelectedPreviewOutfitIndex = 0;
+		return;
+	}
+
+	SelectedPreviewOutfitIndex = FMath::Clamp(OutfitIndex, 0, PreviewData.OutfitPresets.Num() - 1);
+	const FDMOutfitMeshes& Outfit = PreviewData.OutfitPresets[SelectedPreviewOutfitIndex];
+
+	SetPreviewMeshPart(EDMCharacterMeshPart::OutfitLower, Outfit.Lower);
+	SetPreviewMeshPart(EDMCharacterMeshPart::OutfitShoes, Outfit.Shoes);
+	SetPreviewMeshPart(EDMCharacterMeshPart::OutfitUpper, Outfit.Upper);
+}
+
+const FDMCharacterPreviewData& ADMCharacterPreviewActor::GetSelectedPreviewData() const
+{
+	return SelectedPreviewClass == EDMCharacterClass::Ash ? AshPreview : SpritPreview;
 }

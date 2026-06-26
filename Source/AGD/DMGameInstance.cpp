@@ -38,11 +38,18 @@ namespace
 
 void UDMGameInstance::SetPlayerInfo(FDMPlayerInfo Info)
 {
+	Info.OutfitIndex = FMath::Max(0, Info.OutfitIndex);
 	PlayerInfo = Info;
+}
+
+void UDMGameInstance::SetSelectedOutfitIndex(int32 OutfitIndex)
+{
+	PlayerInfo.OutfitIndex = FMath::Max(0, OutfitIndex);
 }
 
 void UDMGameInstance::Host(const FString& MapName, FDMPlayerInfo Info)
 {
+	Info.OutfitIndex = FMath::Max(0, Info.OutfitIndex);
 	PlayerInfo = Info;
 
 	UWorld* World = GetWorld();
@@ -62,6 +69,7 @@ void UDMGameInstance::Host(const FString& MapName, FDMPlayerInfo Info)
 
 void UDMGameInstance::Join(const FString& Address, FDMPlayerInfo Info)
 {
+	Info.OutfitIndex = FMath::Max(0, Info.OutfitIndex);
 	PlayerInfo = Info;
 
 	UWorld* World = GetWorld();
