@@ -9,12 +9,14 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
 // Sets default values
 ADMBasePickup::ADMBasePickup()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 	bReplicates = true;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -67,6 +69,13 @@ void ADMBasePickup::BeginPlay()
 
 	SetPromptVisible(false);
 	
+}
+
+void ADMBasePickup::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	UpdatePromptFacingCamera();
 }
 
 void ADMBasePickup::RefreshPickupPromptText()
@@ -229,6 +238,34 @@ void ADMBasePickup::SetPromptVisible(bool bVisible)
 	{
 		PickupPromptText->SetHiddenInGame(!bVisible);
 	}
+
+	SetActorTickEnabled(bVisible);
+	if (bVisible)
+	{
+		UpdatePromptFacingCamera();
+	}
+}
+
+void ADMBasePickup::UpdatePromptFacingCamera()
+{
+	if (PickupPromptText == nullptr || PickupPromptText->bHiddenInGame)
+	{
+		return;
+	}
+
+	const APlayerCameraManager* CameraManager = UGameplayStatics::GetPlayerCameraManager(this, 0);
+	if (CameraManager == nullptr)
+	{
+		return;
+	}
+
+	const FVector ToCamera = CameraManager->GetCameraLocation() - PickupPromptText->GetComponentLocation();
+	if (ToCamera.IsNearlyZero())
+	{
+		return;
+	}
+
+	PickupPromptText->SetWorldRotation(ToCamera.Rotation() + PromptTextRotationOffset);
 }
 
 FText ADMBasePickup::GetPickupPromptText() const

@@ -51,6 +51,8 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
+	virtual void Tick(float DeltaTime) override;
+
 	UFUNCTION(BlueprintCallable, Category = "DM|Pickup")
 	virtual void ApplyPickup(ADMBaseCharacter* Character);
 
@@ -80,6 +82,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup|Prompt")
 	bool bShowPickupPrompt = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup|Prompt")
+	FRotator PromptTextRotationOffset = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup")
 	EDMPickupType PickupType = EDMPickupType::Health;
@@ -133,6 +138,7 @@ protected:
 
 	void SetPickupActive(bool bNewActive);
 	void SetPromptVisible(bool bVisible);
+	void UpdatePromptFacingCamera();
 	FText GetPickupPromptText() const;
 	void RespawnPickup();
 
