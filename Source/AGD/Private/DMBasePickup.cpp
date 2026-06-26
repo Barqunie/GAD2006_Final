@@ -4,8 +4,11 @@
 #include "DMBasePickup.h"
 
 #include "DMBaseCharacter.h"
+#include "DMBaseTrap.h"
+#include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/TextRenderComponent.h"
 #include "TimerManager.h"
 
 // Sets default values
@@ -27,6 +30,21 @@ ADMBasePickup::ADMBasePickup()
 	Collision->SetCollisionResponseToAllChannels(ECR_Ignore);
 	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
+	PromptBox = CreateDefaultSubobject<UBoxComponent>(TEXT("PromptBox"));
+	PromptBox->SetupAttachment(Root);
+	PromptBox->SetBoxExtent(FVector(225.f, 225.f, 150.f));
+	PromptBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	PromptBox->SetCollisionResponseToAllChannels(ECR_Ignore);
+	PromptBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+
+	PickupPromptText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("PickupPromptText"));
+	PickupPromptText->SetupAttachment(Root);
+	PickupPromptText->SetText(FText::FromString(TEXT("Pick Up")));
+	PickupPromptText->SetRelativeLocation(FVector(0.f, 0.f, 120.f));
+	PickupPromptText->SetHorizontalAlignment(EHTA_Center);
+	PickupPromptText->SetVerticalAlignment(EVRTA_TextCenter);
+	PickupPromptText->SetWorldSize(32.f);
+	PickupPromptText->SetHiddenInGame(true);
 }
 
 // Called when the game starts or when spawned
@@ -38,6 +56,14 @@ void ADMBasePickup::BeginPlay()
 	{
 		Collision->OnComponentBeginOverlap.AddDynamic(this, &ADMBasePickup::OnOverlapBegin);
 	}
+
+	if (PromptBox)
+	{
+		PromptBox->OnComponentBeginOverlap.AddDynamic(this, &ADMBasePickup::OnPromptOverlapBegin);
+		PromptBox->OnComponentEndOverlap.AddDynamic(this, &ADMBasePickup::OnPromptOverlapEnd);
+	}
+
+	SetPromptVisible(false);
 	
 }
 
@@ -140,11 +166,59 @@ void ADMBasePickup::ApplyPickup(ADMBaseCharacter* Character)
 	}
 }
 
+void ADMBasePickup::OnPromptOverlapBegin(
+	UPrimitiveComponent* OverlappedComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult
+)
+{
+	if (!bActive || !bShowPickupPrompt)
+	{
+		return;
+	}
+
+	ADMBaseCharacter* Character = Cast<ADMBaseCharacter>(OtherActor);
+	if (Character == nullptr || !Character->IsLocallyControlled())
+	{
+		return;
+	}
+
+	SetPromptVisible(true);
+}
+
+void ADMBasePickup::OnPromptOverlapEnd(
+	UPrimitiveComponent* OverlappedComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex
+)
+{
+	ADMBaseCharacter* Character = Cast<ADMBaseCharacter>(OtherActor);
+	if (Character == nullptr || !Character->IsLocallyControlled())
+	{
+		return;
+	}
+
+	SetPromptVisible(false);
+}
+
 void ADMBasePickup::SetPickupActive(bool bNewActive)
 {
 	bActive = bNewActive;
 	SetActorHiddenInGame(!bActive);
 	SetActorEnableCollision(bActive);
+	SetPromptVisible(false);
+}
+
+void ADMBasePickup::SetPromptVisible(bool bVisible)
+{
+	if (PickupPromptText)
+	{
+		PickupPromptText->SetHiddenInGame(!bVisible);
+	}
 }
 
 void ADMBasePickup::RespawnPickup()
@@ -155,11 +229,13 @@ void ADMBasePickup::RespawnPickup()
 
 void ADMBasePickup::MulticastPickedUp_Implementation(ADMBaseCharacter* Character)
 {
+	SetPromptVisible(false);
 	OnPickedUp(Character);
 }
 
 void ADMBasePickup::MulticastRespawned_Implementation()
 {
+	SetPromptVisible(false);
 	OnRespawned();
 }
 

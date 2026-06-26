@@ -8,9 +8,11 @@
 
 class ADMBaseCharacter;
 class ADMBaseTrap;
+class UBoxComponent;
 class USphereComponent;
 class USceneComponent;
 class UStaticMeshComponent;
+class UTextRenderComponent;
 class UPrimitiveComponent;
 
 UENUM(BlueprintType)
@@ -67,6 +69,15 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Pickup")
 	TObjectPtr<USphereComponent> Collision;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Pickup|Prompt")
+	TObjectPtr<UBoxComponent> PromptBox;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DM|Pickup|Prompt")
+	TObjectPtr<UTextRenderComponent> PickupPromptText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup|Prompt")
+	bool bShowPickupPrompt = true;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup")
 	EDMPickupType PickupType = EDMPickupType::Health;
 
@@ -99,7 +110,26 @@ protected:
 		const FHitResult& SweepResult
 	);
 
+	UFUNCTION()
+	void OnPromptOverlapBegin(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult
+	);
+
+	UFUNCTION()
+	void OnPromptOverlapEnd(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex
+	);
+
 	void SetPickupActive(bool bNewActive);
+	void SetPromptVisible(bool bVisible);
 	void RespawnPickup();
 
 	UFUNCTION(NetMulticast, Reliable)
