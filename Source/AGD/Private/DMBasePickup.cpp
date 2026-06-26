@@ -52,6 +52,8 @@ void ADMBasePickup::BeginPlay()
 {
 	Super::BeginPlay();
 
+	RefreshPickupPromptText();
+
 	if (Collision)
 	{
 		Collision->OnComponentBeginOverlap.AddDynamic(this, &ADMBasePickup::OnOverlapBegin);
@@ -65,6 +67,14 @@ void ADMBasePickup::BeginPlay()
 
 	SetPromptVisible(false);
 	
+}
+
+void ADMBasePickup::RefreshPickupPromptText()
+{
+	if (PickupPromptText)
+	{
+		PickupPromptText->SetText(GetPickupPromptText());
+	}
 }
 
 void ADMBasePickup::OnOverlapBegin(
@@ -218,6 +228,25 @@ void ADMBasePickup::SetPromptVisible(bool bVisible)
 	if (PickupPromptText)
 	{
 		PickupPromptText->SetHiddenInGame(!bVisible);
+	}
+}
+
+FText ADMBasePickup::GetPickupPromptText() const
+{
+	switch (PickupType)
+	{
+	case EDMPickupType::Health:
+		return FText::FromString(TEXT("Pick Up Health"));
+	case EDMPickupType::Ammo:
+		return FText::FromString(TEXT("Pick Up Ammo"));
+	case EDMPickupType::SpeedBoost:
+		return FText::FromString(TEXT("Pick Up Speed Boost"));
+	case EDMPickupType::DamageBoost:
+		return FText::FromString(TEXT("Pick Up Damage Boost"));
+	case EDMPickupType::Trap:
+		return FText::FromString(TEXT("Pick Up Trap"));
+	default:
+		return FText::FromString(TEXT("Pick Up"));
 	}
 }
 

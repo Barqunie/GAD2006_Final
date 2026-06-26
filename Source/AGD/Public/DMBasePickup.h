@@ -54,6 +54,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DM|Pickup")
 	virtual void ApplyPickup(ADMBaseCharacter* Character);
 
+	UFUNCTION(BlueprintCallable, Category = "DM|Pickup|Prompt")
+	void RefreshPickupPromptText();
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Pickup")
 	void OnPickedUp(ADMBaseCharacter* Character);
 
@@ -130,6 +133,7 @@ protected:
 
 	void SetPickupActive(bool bNewActive);
 	void SetPromptVisible(bool bVisible);
+	FText GetPickupPromptText() const;
 	void RespawnPickup();
 
 	UFUNCTION(NetMulticast, Reliable)
