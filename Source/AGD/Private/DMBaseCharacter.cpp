@@ -106,6 +106,20 @@ void ADMBaseCharacter::BeginPlay()
 
 }
 
+void ADMBaseCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	ApplyPlayerCustomizationFromPlayerState();
+}
+
+void ADMBaseCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	ApplyPlayerCustomizationFromPlayerState();
+}
+
 void ADMBaseCharacter::SetModularCharacterMeshes(const FDMModularCharacterMeshes& NewMeshes)
 {
 	SetModularMeshPart(EDMCharacterMeshPart::Torso, NewMeshes.Torso);
@@ -179,7 +193,10 @@ void ADMBaseCharacter::ApplyPlayerCustomizationFromPlayerState()
 
 	if (HasAuthority())
 	{
+		SelectedOutfitIndex = OutfitIndex;
+		ApplyOutfitByIndex(OutfitIndex);
 		MulticastApplyOutfitIndex(OutfitIndex);
+		ForceNetUpdate();
 		return;
 	}
 
@@ -230,6 +247,7 @@ void ADMBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ADMBaseCharacter, bSkillHidden);
 	DOREPLIFETIME(ADMBaseCharacter, DefaultTrapClass);
 	DOREPLIFETIME(ADMBaseCharacter, AvailableTrapDisplayName);
+	DOREPLIFETIME(ADMBaseCharacter, SelectedOutfitIndex);
 }
 
 // Called every frame
@@ -1371,6 +1389,11 @@ void ADMBaseCharacter::OnRep_SkillHidden()
 void ADMBaseCharacter::OnRep_AvailableTrapClass()
 {
 	OnTrapClassChanged(DefaultTrapClass);
+}
+
+void ADMBaseCharacter::OnRep_SelectedOutfitIndex()
+{
+	ApplyOutfitByIndex(SelectedOutfitIndex);
 }
 
 void ADMBaseCharacter::ApplyAimState(bool bNewAiming)

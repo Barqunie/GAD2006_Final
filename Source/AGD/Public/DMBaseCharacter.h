@@ -32,6 +32,8 @@ protected:
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -393,6 +395,9 @@ protected:
 	UFUNCTION()
 	void OnRep_AvailableTrapClass();
 
+	UFUNCTION()
+	void OnRep_SelectedOutfitIndex();
+
 	UFUNCTION(Server, Reliable)
 	void ServerSetRunning(bool bNewRunning);
 
@@ -485,5 +490,6 @@ protected:
 
 	float LastSkillQTime = -100.f;
 	float LastSkillETime = -100.f;
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_SelectedOutfitIndex, Category = "DM|Character|Outfit")
 	int32 SelectedOutfitIndex = 0;
 };

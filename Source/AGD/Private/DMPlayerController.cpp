@@ -569,6 +569,7 @@ void ADMPlayerController::HideBlindnessWidget()
 
 void ADMPlayerController::StartLobbyMatch(const FString& MapName)
 {
+	SubmitLocalPlayerInfo();
 	ServerStartLobbyMatch(MapName);
 }
 

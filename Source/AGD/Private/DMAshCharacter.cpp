@@ -24,6 +24,9 @@ ADMAshCharacter::ADMAshCharacter()
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> OutfitLowerMesh(TEXT("/Game/CoreC/03Outfit/000_TechwearRunnerCourier01/SKM/SKM_CoreC_M_Techwear01_Lower.SKM_CoreC_M_Techwear01_Lower"));
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> OutfitShoesMesh(TEXT("/Game/CoreC/03Outfit/000_TechwearRunnerCourier01/SKM/SKM_CoreC_M_Techwear01_Shoes.SKM_CoreC_M_Techwear01_Shoes"));
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> OutfitUpperMesh(TEXT("/Game/CoreC/03Outfit/000_TechwearRunnerCourier01/SKM/SKM_CoreC_M_Techwear01_Upper.SKM_CoreC_M_Techwear01_Upper"));
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> OutfitLowerMesh1(TEXT("/Game/CoreC/03Outfit/000_TechwearRunnerCourier01/SKM/SKM_CoreC_M_Techwear01_Lower1.SKM_CoreC_M_Techwear01_Lower1"));
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> OutfitShoesMesh1(TEXT("/Game/CoreC/03Outfit/000_TechwearRunnerCourier01/SKM/SKM_CoreC_M_Techwear01_Shoes1.SKM_CoreC_M_Techwear01_Shoes1"));
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> OutfitUpperMesh1(TEXT("/Game/CoreC/03Outfit/000_TechwearRunnerCourier01/SKM/SKM_CoreC_M_Techwear01_Upper1.SKM_CoreC_M_Techwear01_Upper1"));
 
 	if (BodyCombinedMesh.Succeeded())
 	{
@@ -41,6 +44,10 @@ ADMAshCharacter::ADMAshCharacter()
 	DefaultModularMeshes.OutfitLower = OutfitLowerMesh.Object;
 	DefaultModularMeshes.OutfitShoes = OutfitShoesMesh.Object;
 	DefaultModularMeshes.OutfitUpper = OutfitUpperMesh.Object;
+
+	OutfitPresets.Reset();
+	OutfitPresets.Add({ OutfitLowerMesh.Object, OutfitShoesMesh.Object, OutfitUpperMesh.Object });
+	OutfitPresets.Add({ OutfitLowerMesh1.Object, OutfitShoesMesh1.Object, OutfitUpperMesh1.Object });
 }
 
 void ADMAshCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
