@@ -97,6 +97,15 @@ struct FDMPlayerInfo
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 OutfitIndex = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 OutfitLowerIndex = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 OutfitShoesIndex = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 OutfitUpperIndex = 0;
 };
 
 USTRUCT(BlueprintType)

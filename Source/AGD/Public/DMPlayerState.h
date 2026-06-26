@@ -38,6 +38,15 @@ public:
 	UPROPERTY(BlueprintReadOnly, Replicated)
 	int32 OutfitIndex = 0;
 
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	int32 OutfitLowerIndex = 0;
+
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	int32 OutfitShoesIndex = 0;
+
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	int32 OutfitUpperIndex = 0;
+
 	UFUNCTION(BlueprintCallable)
 	void ResetMatchStats();
 

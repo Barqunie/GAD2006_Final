@@ -39,17 +39,46 @@ namespace
 void UDMGameInstance::SetPlayerInfo(FDMPlayerInfo Info)
 {
 	Info.OutfitIndex = FMath::Max(0, Info.OutfitIndex);
+	Info.OutfitLowerIndex = FMath::Max(0, Info.OutfitLowerIndex);
+	Info.OutfitShoesIndex = FMath::Max(0, Info.OutfitShoesIndex);
+	Info.OutfitUpperIndex = FMath::Max(0, Info.OutfitUpperIndex);
 	PlayerInfo = Info;
 }
 
 void UDMGameInstance::SetSelectedOutfitIndex(int32 OutfitIndex)
 {
 	PlayerInfo.OutfitIndex = FMath::Max(0, OutfitIndex);
+	PlayerInfo.OutfitLowerIndex = PlayerInfo.OutfitIndex;
+	PlayerInfo.OutfitShoesIndex = PlayerInfo.OutfitIndex;
+	PlayerInfo.OutfitUpperIndex = PlayerInfo.OutfitIndex;
+}
+
+void UDMGameInstance::SetSelectedOutfitPartIndex(EDMCharacterMeshPart MeshPart, int32 PartIndex)
+{
+	const int32 SafePartIndex = FMath::Max(0, PartIndex);
+
+	switch (MeshPart)
+	{
+	case EDMCharacterMeshPart::OutfitLower:
+		PlayerInfo.OutfitLowerIndex = SafePartIndex;
+		break;
+	case EDMCharacterMeshPart::OutfitShoes:
+		PlayerInfo.OutfitShoesIndex = SafePartIndex;
+		break;
+	case EDMCharacterMeshPart::OutfitUpper:
+		PlayerInfo.OutfitUpperIndex = SafePartIndex;
+		break;
+	default:
+		break;
+	}
 }
 
 void UDMGameInstance::Host(const FString& MapName, FDMPlayerInfo Info)
 {
 	Info.OutfitIndex = FMath::Max(0, Info.OutfitIndex);
+	Info.OutfitLowerIndex = FMath::Max(0, Info.OutfitLowerIndex);
+	Info.OutfitShoesIndex = FMath::Max(0, Info.OutfitShoesIndex);
+	Info.OutfitUpperIndex = FMath::Max(0, Info.OutfitUpperIndex);
 	PlayerInfo = Info;
 
 	UWorld* World = GetWorld();
@@ -70,6 +99,9 @@ void UDMGameInstance::Host(const FString& MapName, FDMPlayerInfo Info)
 void UDMGameInstance::Join(const FString& Address, FDMPlayerInfo Info)
 {
 	Info.OutfitIndex = FMath::Max(0, Info.OutfitIndex);
+	Info.OutfitLowerIndex = FMath::Max(0, Info.OutfitLowerIndex);
+	Info.OutfitShoesIndex = FMath::Max(0, Info.OutfitShoesIndex);
+	Info.OutfitUpperIndex = FMath::Max(0, Info.OutfitUpperIndex);
 	PlayerInfo = Info;
 
 	UWorld* World = GetWorld();

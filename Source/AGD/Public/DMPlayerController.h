@@ -35,6 +35,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lobby")
 	void SelectOutfitIndex(int32 OutfitIndex);
 
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void SelectOutfitPartIndex(EDMCharacterMeshPart MeshPart, int32 PartIndex);
+
 	UFUNCTION(BlueprintPure, Category = "Lobby")
 	FDMPlayerInfo GetLocalPlayerInfo() const;
 

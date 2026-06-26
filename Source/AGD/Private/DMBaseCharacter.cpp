@@ -173,15 +173,64 @@ void ADMBaseCharacter::ApplyOutfitByIndex(int32 OutfitIndex)
 	if (OutfitPresets.Num() <= 0)
 	{
 		SelectedOutfitIndex = 0;
+		SelectedOutfitLowerIndex = 0;
+		SelectedOutfitShoesIndex = 0;
+		SelectedOutfitUpperIndex = 0;
 		return;
 	}
 
 	SelectedOutfitIndex = FMath::Clamp(OutfitIndex, 0, OutfitPresets.Num() - 1);
-	const FDMOutfitMeshes& Outfit = OutfitPresets[SelectedOutfitIndex];
+	ApplyOutfitPartsByIndex(SelectedOutfitIndex, SelectedOutfitIndex, SelectedOutfitIndex);
+}
 
-	SetModularMeshPart(EDMCharacterMeshPart::OutfitLower, Outfit.Lower);
-	SetModularMeshPart(EDMCharacterMeshPart::OutfitShoes, Outfit.Shoes);
-	SetModularMeshPart(EDMCharacterMeshPart::OutfitUpper, Outfit.Upper);
+void ADMBaseCharacter::ApplyOutfitPartByIndex(EDMCharacterMeshPart MeshPart, int32 PartIndex)
+{
+	if (OutfitPresets.Num() <= 0)
+	{
+		return;
+	}
+
+	const int32 SafePartIndex = FMath::Clamp(PartIndex, 0, OutfitPresets.Num() - 1);
+	const FDMOutfitMeshes& Outfit = OutfitPresets[SafePartIndex];
+
+	switch (MeshPart)
+	{
+	case EDMCharacterMeshPart::OutfitLower:
+		SelectedOutfitLowerIndex = SafePartIndex;
+		SetModularMeshPart(EDMCharacterMeshPart::OutfitLower, Outfit.Lower);
+		break;
+	case EDMCharacterMeshPart::OutfitShoes:
+		SelectedOutfitShoesIndex = SafePartIndex;
+		SetModularMeshPart(EDMCharacterMeshPart::OutfitShoes, Outfit.Shoes);
+		break;
+	case EDMCharacterMeshPart::OutfitUpper:
+		SelectedOutfitUpperIndex = SafePartIndex;
+		SetModularMeshPart(EDMCharacterMeshPart::OutfitUpper, Outfit.Upper);
+		break;
+	default:
+		return;
+	}
+
+	OnModularCharacterMeshesChanged();
+}
+
+void ADMBaseCharacter::ApplyOutfitPartsByIndex(int32 LowerIndex, int32 ShoesIndex, int32 UpperIndex)
+{
+	if (OutfitPresets.Num() <= 0)
+	{
+		SelectedOutfitLowerIndex = 0;
+		SelectedOutfitShoesIndex = 0;
+		SelectedOutfitUpperIndex = 0;
+		return;
+	}
+
+	SelectedOutfitLowerIndex = FMath::Clamp(LowerIndex, 0, OutfitPresets.Num() - 1);
+	SelectedOutfitShoesIndex = FMath::Clamp(ShoesIndex, 0, OutfitPresets.Num() - 1);
+	SelectedOutfitUpperIndex = FMath::Clamp(UpperIndex, 0, OutfitPresets.Num() - 1);
+
+	SetModularMeshPart(EDMCharacterMeshPart::OutfitLower, OutfitPresets[SelectedOutfitLowerIndex].Lower);
+	SetModularMeshPart(EDMCharacterMeshPart::OutfitShoes, OutfitPresets[SelectedOutfitShoesIndex].Shoes);
+	SetModularMeshPart(EDMCharacterMeshPart::OutfitUpper, OutfitPresets[SelectedOutfitUpperIndex].Upper);
 
 	OnModularCharacterMeshesChanged();
 }
@@ -190,17 +239,35 @@ void ADMBaseCharacter::ApplyPlayerCustomizationFromPlayerState()
 {
 	const ADMPlayerState* DMState = GetPlayerState<ADMPlayerState>();
 	const int32 OutfitIndex = DMState ? DMState->OutfitIndex : 0;
+	const int32 LowerIndex = DMState ? DMState->OutfitLowerIndex : OutfitIndex;
+	const int32 ShoesIndex = DMState ? DMState->OutfitShoesIndex : OutfitIndex;
+	const int32 UpperIndex = DMState ? DMState->OutfitUpperIndex : OutfitIndex;
 
 	if (HasAuthority())
 	{
 		SelectedOutfitIndex = OutfitIndex;
-		ApplyOutfitByIndex(OutfitIndex);
-		MulticastApplyOutfitIndex(OutfitIndex);
+		ApplyOutfitPartsByIndex(LowerIndex, ShoesIndex, UpperIndex);
+		MulticastApplyOutfitPartIndices(LowerIndex, ShoesIndex, UpperIndex);
 		ForceNetUpdate();
 		return;
 	}
 
-	ApplyOutfitByIndex(OutfitIndex);
+	ApplyOutfitPartsByIndex(LowerIndex, ShoesIndex, UpperIndex);
+}
+
+int32 ADMBaseCharacter::GetSelectedOutfitPartIndex(EDMCharacterMeshPart MeshPart) const
+{
+	switch (MeshPart)
+	{
+	case EDMCharacterMeshPart::OutfitLower:
+		return SelectedOutfitLowerIndex;
+	case EDMCharacterMeshPart::OutfitShoes:
+		return SelectedOutfitShoesIndex;
+	case EDMCharacterMeshPart::OutfitUpper:
+		return SelectedOutfitUpperIndex;
+	default:
+		return 0;
+	}
 }
 
 USkeletalMeshComponent* ADMBaseCharacter::GetModularMeshComponent(EDMCharacterMeshPart MeshPart) const
@@ -248,6 +315,9 @@ void ADMBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ADMBaseCharacter, DefaultTrapClass);
 	DOREPLIFETIME(ADMBaseCharacter, AvailableTrapDisplayName);
 	DOREPLIFETIME(ADMBaseCharacter, SelectedOutfitIndex);
+	DOREPLIFETIME(ADMBaseCharacter, SelectedOutfitLowerIndex);
+	DOREPLIFETIME(ADMBaseCharacter, SelectedOutfitShoesIndex);
+	DOREPLIFETIME(ADMBaseCharacter, SelectedOutfitUpperIndex);
 }
 
 // Called every frame
@@ -1352,6 +1422,11 @@ void ADMBaseCharacter::MulticastApplyOutfitIndex_Implementation(int32 OutfitInde
 	ApplyOutfitByIndex(OutfitIndex);
 }
 
+void ADMBaseCharacter::MulticastApplyOutfitPartIndices_Implementation(int32 LowerIndex, int32 ShoesIndex, int32 UpperIndex)
+{
+	ApplyOutfitPartsByIndex(LowerIndex, ShoesIndex, UpperIndex);
+}
+
 void ADMBaseCharacter::ApplyDeathRagdoll()
 {
 	if (GetMesh() == nullptr)
@@ -1394,6 +1469,11 @@ void ADMBaseCharacter::OnRep_AvailableTrapClass()
 void ADMBaseCharacter::OnRep_SelectedOutfitIndex()
 {
 	ApplyOutfitByIndex(SelectedOutfitIndex);
+}
+
+void ADMBaseCharacter::OnRep_SelectedOutfitParts()
+{
+	ApplyOutfitPartsByIndex(SelectedOutfitLowerIndex, SelectedOutfitShoesIndex, SelectedOutfitUpperIndex);
 }
 
 void ADMBaseCharacter::ApplyAimState(bool bNewAiming)

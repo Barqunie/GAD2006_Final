@@ -62,6 +62,9 @@ void ADMPlayerController::SubmitLocalPlayerInfo()
 void ADMPlayerController::SetAndSubmitPlayerInfo(FDMPlayerInfo Info)
 {
 	Info.OutfitIndex = FMath::Max(0, Info.OutfitIndex);
+	Info.OutfitLowerIndex = FMath::Max(0, Info.OutfitLowerIndex);
+	Info.OutfitShoesIndex = FMath::Max(0, Info.OutfitShoesIndex);
+	Info.OutfitUpperIndex = FMath::Max(0, Info.OutfitUpperIndex);
 
 	UDMGameInstance* DMGameInstance = GetGameInstance<UDMGameInstance>();
 
@@ -85,6 +88,32 @@ void ADMPlayerController::SelectOutfitIndex(int32 OutfitIndex)
 {
 	FDMPlayerInfo Info = GetLocalPlayerInfo();
 	Info.OutfitIndex = FMath::Max(0, OutfitIndex);
+	Info.OutfitLowerIndex = Info.OutfitIndex;
+	Info.OutfitShoesIndex = Info.OutfitIndex;
+	Info.OutfitUpperIndex = Info.OutfitIndex;
+
+	SetAndSubmitPlayerInfo(Info);
+}
+
+void ADMPlayerController::SelectOutfitPartIndex(EDMCharacterMeshPart MeshPart, int32 PartIndex)
+{
+	FDMPlayerInfo Info = GetLocalPlayerInfo();
+	const int32 SafePartIndex = FMath::Max(0, PartIndex);
+
+	switch (MeshPart)
+	{
+	case EDMCharacterMeshPart::OutfitLower:
+		Info.OutfitLowerIndex = SafePartIndex;
+		break;
+	case EDMCharacterMeshPart::OutfitShoes:
+		Info.OutfitShoesIndex = SafePartIndex;
+		break;
+	case EDMCharacterMeshPart::OutfitUpper:
+		Info.OutfitUpperIndex = SafePartIndex;
+		break;
+	default:
+		return;
+	}
 
 	SetAndSubmitPlayerInfo(Info);
 }

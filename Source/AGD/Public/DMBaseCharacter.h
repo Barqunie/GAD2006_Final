@@ -108,10 +108,19 @@ public:
 	void ApplyOutfitByIndex(int32 OutfitIndex);
 
 	UFUNCTION(BlueprintCallable, Category = "DM|Character|Outfit")
+	void ApplyOutfitPartByIndex(EDMCharacterMeshPart MeshPart, int32 PartIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Character|Outfit")
+	void ApplyOutfitPartsByIndex(int32 LowerIndex, int32 ShoesIndex, int32 UpperIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Character|Outfit")
 	void ApplyPlayerCustomizationFromPlayerState();
 
 	UFUNCTION(BlueprintPure, Category = "DM|Character|Outfit")
 	int32 GetSelectedOutfitIndex() const { return SelectedOutfitIndex; }
+
+	UFUNCTION(BlueprintPure, Category = "DM|Character|Outfit")
+	int32 GetSelectedOutfitPartIndex(EDMCharacterMeshPart MeshPart) const;
 
 	UFUNCTION(BlueprintPure, Category = "DM|Character|Outfit")
 	int32 GetOutfitCount() const { return OutfitPresets.Num(); }
@@ -398,6 +407,9 @@ protected:
 	UFUNCTION()
 	void OnRep_SelectedOutfitIndex();
 
+	UFUNCTION()
+	void OnRep_SelectedOutfitParts();
+
 	UFUNCTION(Server, Reliable)
 	void ServerSetRunning(bool bNewRunning);
 
@@ -449,6 +461,9 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastApplyOutfitIndex(int32 OutfitIndex);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastApplyOutfitPartIndices(int32 LowerIndex, int32 ShoesIndex, int32 UpperIndex);
+
 	void SpawnDefaultWeapon();
 	bool CanUseSkill(float LastUseTime, float Cooldown) const;
 	bool CanPlaceTrap() const;
@@ -492,4 +507,13 @@ protected:
 	float LastSkillETime = -100.f;
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_SelectedOutfitIndex, Category = "DM|Character|Outfit")
 	int32 SelectedOutfitIndex = 0;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_SelectedOutfitParts, Category = "DM|Character|Outfit")
+	int32 SelectedOutfitLowerIndex = 0;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_SelectedOutfitParts, Category = "DM|Character|Outfit")
+	int32 SelectedOutfitShoesIndex = 0;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_SelectedOutfitParts, Category = "DM|Character|Outfit")
+	int32 SelectedOutfitUpperIndex = 0;
 };

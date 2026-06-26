@@ -137,7 +137,7 @@ void ADMCharacterPreviewActor::SetPreviewClass(EDMCharacterClass CharacterClass)
 		break;
 	}
 
-	SetPreviewOutfitIndex(SelectedPreviewOutfitIndex);
+	ApplyPreviewOutfitParts(GetSelectedPreviewData(), SelectedPreviewOutfitLowerIndex, SelectedPreviewOutfitShoesIndex, SelectedPreviewOutfitUpperIndex);
 	OnPreviewClassChanged(CharacterClass);
 }
 
@@ -188,6 +188,28 @@ int32 ADMCharacterPreviewActor::StepPreviewOutfit(int32 Direction)
 	return SelectedPreviewOutfitIndex;
 }
 
+void ADMCharacterPreviewActor::SetPreviewOutfitPartIndex(EDMCharacterMeshPart MeshPart, int32 PartIndex)
+{
+	ApplyPreviewOutfitPart(GetSelectedPreviewData(), MeshPart, PartIndex);
+}
+
+int32 ADMCharacterPreviewActor::StepPreviewOutfitPart(EDMCharacterMeshPart MeshPart, int32 Direction)
+{
+	const int32 OutfitCount = GetPreviewOutfitCount();
+	if (OutfitCount <= 0)
+	{
+		SelectedPreviewOutfitLowerIndex = 0;
+		SelectedPreviewOutfitShoesIndex = 0;
+		SelectedPreviewOutfitUpperIndex = 0;
+		return 0;
+	}
+
+	const int32 CurrentIndex = GetSelectedPreviewOutfitPartIndex(MeshPart);
+	const int32 WrappedIndex = (CurrentIndex + Direction + OutfitCount) % OutfitCount;
+	SetPreviewOutfitPartIndex(MeshPart, WrappedIndex);
+	return WrappedIndex;
+}
+
 USkeletalMeshComponent* ADMCharacterPreviewActor::GetPreviewMeshComponent(EDMCharacterMeshPart MeshPart) const
 {
 	switch (MeshPart)
@@ -222,6 +244,21 @@ USkeletalMeshComponent* ADMCharacterPreviewActor::GetPreviewMeshComponent(EDMCha
 int32 ADMCharacterPreviewActor::GetPreviewOutfitCount() const
 {
 	return GetSelectedPreviewData().OutfitPresets.Num();
+}
+
+int32 ADMCharacterPreviewActor::GetSelectedPreviewOutfitPartIndex(EDMCharacterMeshPart MeshPart) const
+{
+	switch (MeshPart)
+	{
+	case EDMCharacterMeshPart::OutfitLower:
+		return SelectedPreviewOutfitLowerIndex;
+	case EDMCharacterMeshPart::OutfitShoes:
+		return SelectedPreviewOutfitShoesIndex;
+	case EDMCharacterMeshPart::OutfitUpper:
+		return SelectedPreviewOutfitUpperIndex;
+	default:
+		return 0;
+	}
 }
 
 void ADMCharacterPreviewActor::ApplyPreviewData(const FDMCharacterPreviewData& PreviewData)
@@ -274,11 +311,55 @@ void ADMCharacterPreviewActor::ApplyPreviewOutfit(const FDMCharacterPreviewData&
 	}
 
 	SelectedPreviewOutfitIndex = FMath::Clamp(OutfitIndex, 0, PreviewData.OutfitPresets.Num() - 1);
-	const FDMOutfitMeshes& Outfit = PreviewData.OutfitPresets[SelectedPreviewOutfitIndex];
+	ApplyPreviewOutfitParts(PreviewData, SelectedPreviewOutfitIndex, SelectedPreviewOutfitIndex, SelectedPreviewOutfitIndex);
+}
 
-	SetPreviewMeshPart(EDMCharacterMeshPart::OutfitLower, Outfit.Lower);
-	SetPreviewMeshPart(EDMCharacterMeshPart::OutfitShoes, Outfit.Shoes);
-	SetPreviewMeshPart(EDMCharacterMeshPart::OutfitUpper, Outfit.Upper);
+void ADMCharacterPreviewActor::ApplyPreviewOutfitPart(const FDMCharacterPreviewData& PreviewData, EDMCharacterMeshPart MeshPart, int32 PartIndex)
+{
+	if (PreviewData.OutfitPresets.Num() <= 0)
+	{
+		return;
+	}
+
+	const int32 SafePartIndex = FMath::Clamp(PartIndex, 0, PreviewData.OutfitPresets.Num() - 1);
+	const FDMOutfitMeshes& Outfit = PreviewData.OutfitPresets[SafePartIndex];
+
+	switch (MeshPart)
+	{
+	case EDMCharacterMeshPart::OutfitLower:
+		SelectedPreviewOutfitLowerIndex = SafePartIndex;
+		SetPreviewMeshPart(EDMCharacterMeshPart::OutfitLower, Outfit.Lower);
+		break;
+	case EDMCharacterMeshPart::OutfitShoes:
+		SelectedPreviewOutfitShoesIndex = SafePartIndex;
+		SetPreviewMeshPart(EDMCharacterMeshPart::OutfitShoes, Outfit.Shoes);
+		break;
+	case EDMCharacterMeshPart::OutfitUpper:
+		SelectedPreviewOutfitUpperIndex = SafePartIndex;
+		SetPreviewMeshPart(EDMCharacterMeshPart::OutfitUpper, Outfit.Upper);
+		break;
+	default:
+		break;
+	}
+}
+
+void ADMCharacterPreviewActor::ApplyPreviewOutfitParts(const FDMCharacterPreviewData& PreviewData, int32 LowerIndex, int32 ShoesIndex, int32 UpperIndex)
+{
+	if (PreviewData.OutfitPresets.Num() <= 0)
+	{
+		SelectedPreviewOutfitLowerIndex = 0;
+		SelectedPreviewOutfitShoesIndex = 0;
+		SelectedPreviewOutfitUpperIndex = 0;
+		return;
+	}
+
+	SelectedPreviewOutfitLowerIndex = FMath::Clamp(LowerIndex, 0, PreviewData.OutfitPresets.Num() - 1);
+	SelectedPreviewOutfitShoesIndex = FMath::Clamp(ShoesIndex, 0, PreviewData.OutfitPresets.Num() - 1);
+	SelectedPreviewOutfitUpperIndex = FMath::Clamp(UpperIndex, 0, PreviewData.OutfitPresets.Num() - 1);
+
+	SetPreviewMeshPart(EDMCharacterMeshPart::OutfitLower, PreviewData.OutfitPresets[SelectedPreviewOutfitLowerIndex].Lower);
+	SetPreviewMeshPart(EDMCharacterMeshPart::OutfitShoes, PreviewData.OutfitPresets[SelectedPreviewOutfitShoesIndex].Shoes);
+	SetPreviewMeshPart(EDMCharacterMeshPart::OutfitUpper, PreviewData.OutfitPresets[SelectedPreviewOutfitUpperIndex].Upper);
 }
 
 const FDMCharacterPreviewData& ADMCharacterPreviewActor::GetSelectedPreviewData() const

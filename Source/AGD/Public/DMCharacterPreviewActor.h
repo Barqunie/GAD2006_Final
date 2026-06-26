@@ -69,6 +69,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DM|Preview")
 	int32 StepPreviewOutfit(int32 Direction);
 
+	UFUNCTION(BlueprintCallable, Category = "DM|Preview")
+	void SetPreviewOutfitPartIndex(EDMCharacterMeshPart MeshPart, int32 PartIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Preview")
+	int32 StepPreviewOutfitPart(EDMCharacterMeshPart MeshPart, int32 Direction);
+
 	UFUNCTION(BlueprintPure, Category = "DM|Preview")
 	USkeletalMeshComponent* GetPreviewMeshComponent(EDMCharacterMeshPart MeshPart) const;
 
@@ -77,6 +83,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "DM|Preview")
 	int32 GetSelectedPreviewOutfitIndex() const { return SelectedPreviewOutfitIndex; }
+
+	UFUNCTION(BlueprintPure, Category = "DM|Preview")
+	int32 GetSelectedPreviewOutfitPartIndex(EDMCharacterMeshPart MeshPart) const;
 
 	UFUNCTION(BlueprintPure, Category = "DM|Preview")
 	int32 GetPreviewOutfitCount() const;
@@ -142,8 +151,13 @@ protected:
 private:
 	void ApplyPreviewData(const FDMCharacterPreviewData& PreviewData);
 	void ApplyPreviewOutfit(const FDMCharacterPreviewData& PreviewData, int32 OutfitIndex);
+	void ApplyPreviewOutfitPart(const FDMCharacterPreviewData& PreviewData, EDMCharacterMeshPart MeshPart, int32 PartIndex);
+	void ApplyPreviewOutfitParts(const FDMCharacterPreviewData& PreviewData, int32 LowerIndex, int32 ShoesIndex, int32 UpperIndex);
 	const FDMCharacterPreviewData& GetSelectedPreviewData() const;
 
 	EDMCharacterClass SelectedPreviewClass = EDMCharacterClass::Sprit;
 	int32 SelectedPreviewOutfitIndex = 0;
+	int32 SelectedPreviewOutfitLowerIndex = 0;
+	int32 SelectedPreviewOutfitShoesIndex = 0;
+	int32 SelectedPreviewOutfitUpperIndex = 0;
 };

@@ -20,6 +20,9 @@ void ADMPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ADMPlayerState, MatchScore);
 	DOREPLIFETIME(ADMPlayerState, CharacterClass);
 	DOREPLIFETIME(ADMPlayerState, OutfitIndex);
+	DOREPLIFETIME(ADMPlayerState, OutfitLowerIndex);
+	DOREPLIFETIME(ADMPlayerState, OutfitShoesIndex);
+	DOREPLIFETIME(ADMPlayerState, OutfitUpperIndex);
 }
 
 void ADMPlayerState::ResetMatchStats()
@@ -34,6 +37,9 @@ void ADMPlayerState::ApplyPlayerInfo(const FDMPlayerInfo& Info)
 	PlayerNickname = Info.Nickname.IsEmpty() ? TEXT("Player") : Info.Nickname;
 	CharacterClass = Info.CharacterClass;
 	OutfitIndex = FMath::Max(0, Info.OutfitIndex);
+	OutfitLowerIndex = FMath::Max(0, Info.OutfitLowerIndex);
+	OutfitShoesIndex = FMath::Max(0, Info.OutfitShoesIndex);
+	OutfitUpperIndex = FMath::Max(0, Info.OutfitUpperIndex);
 	SetPlayerName(PlayerNickname);
 }
 

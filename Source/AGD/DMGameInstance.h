@@ -22,6 +22,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lobby")
 	void SetSelectedOutfitIndex(int32 OutfitIndex);
 
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void SetSelectedOutfitPartIndex(EDMCharacterMeshPart MeshPart, int32 PartIndex);
+
 	UFUNCTION(BlueprintPure, Category = "Lobby")
 	int32 GetSelectedOutfitIndex() const { return PlayerInfo.OutfitIndex; }
 
