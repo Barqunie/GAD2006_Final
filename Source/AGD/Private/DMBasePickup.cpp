@@ -15,8 +15,7 @@
 // Sets default values
 ADMBasePickup::ADMBasePickup()
 {
-	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = false;
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -71,11 +70,11 @@ void ADMBasePickup::BeginPlay()
 	
 }
 
-void ADMBasePickup::Tick(float DeltaTime)
+void ADMBasePickup::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	Super::Tick(DeltaTime);
+	StopPromptFacingUpdates();
 
-	UpdatePromptFacingCamera();
+	Super::EndPlay(EndPlayReason);
 }
 
 void ADMBasePickup::RefreshPickupPromptText()
@@ -239,10 +238,37 @@ void ADMBasePickup::SetPromptVisible(bool bVisible)
 		PickupPromptText->SetHiddenInGame(!bVisible);
 	}
 
-	SetActorTickEnabled(bVisible);
 	if (bVisible)
 	{
 		UpdatePromptFacingCamera();
+		StartPromptFacingUpdates();
+	}
+	else
+	{
+		StopPromptFacingUpdates();
+	}
+}
+
+void ADMBasePickup::StartPromptFacingUpdates()
+{
+	if (UWorld* World = GetWorld())
+	{
+		const float UpdateInterval = FMath::Max(0.02f, PromptFacingUpdateInterval);
+		World->GetTimerManager().SetTimer(
+			PromptFacingTimerHandle,
+			this,
+			&ADMBasePickup::UpdatePromptFacingCamera,
+			UpdateInterval,
+			true
+		);
+	}
+}
+
+void ADMBasePickup::StopPromptFacingUpdates()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(PromptFacingTimerHandle);
 	}
 }
 

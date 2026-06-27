@@ -49,9 +49,9 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-public:	
-	virtual void Tick(float DeltaTime) override;
+public:
 
 	UFUNCTION(BlueprintCallable, Category = "DM|Pickup")
 	virtual void ApplyPickup(ADMBaseCharacter* Character);
@@ -85,6 +85,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup|Prompt")
 	FRotator PromptTextRotationOffset = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup|Prompt", meta = (ClampMin = "0.02"))
+	float PromptFacingUpdateInterval = 0.1f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Pickup")
 	EDMPickupType PickupType = EDMPickupType::Health;
@@ -138,6 +141,8 @@ protected:
 
 	void SetPickupActive(bool bNewActive);
 	void SetPromptVisible(bool bVisible);
+	void StartPromptFacingUpdates();
+	void StopPromptFacingUpdates();
 	void UpdatePromptFacingCamera();
 	FText GetPickupPromptText() const;
 	void RespawnPickup();
@@ -149,6 +154,7 @@ protected:
 	void MulticastRespawned();
 
 	FTimerHandle RespawnTimerHandle;
+	FTimerHandle PromptFacingTimerHandle;
 	bool bActive = true;
 
 };
