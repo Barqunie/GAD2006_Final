@@ -4,8 +4,11 @@
 
 #include "DMBaseCharacter.h"
 #include "Components/BoxComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ADMBaseTrap::ADMBaseTrap()
@@ -26,6 +29,14 @@ ADMBaseTrap::ADMBaseTrap()
 	TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	TriggerBox->SetCollisionResponseToAllChannels(ECR_Ignore);
 	TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+}
+
+void ADMBaseTrap::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ADMBaseTrap, PlacedByCharacter);
+	DOREPLIFETIME(ADMBaseTrap, PlacedByPlayerState);
 }
 
 void ADMBaseTrap::BeginPlay()
@@ -57,6 +68,7 @@ void ADMBaseTrap::Tick(float DeltaTime)
 void ADMBaseTrap::SetPlacedBy(ADMBaseCharacter* NewOwnerCharacter)
 {
 	PlacedByCharacter = NewOwnerCharacter;
+	PlacedByPlayerState = NewOwnerCharacter ? NewOwnerCharacter->GetPlayerState() : nullptr;
 	SetOwner(NewOwnerCharacter);
 	UpdateLocalVisibility();
 }
@@ -89,7 +101,7 @@ void ADMBaseTrap::OnOverlapBegin(
 		return;
 	}
 
-	if (!bCanTriggerOwner && Character == PlacedByCharacter.Get())
+	if (!bCanTriggerOwner && WasPlacedBy(Character))
 	{
 		return;
 	}
@@ -103,7 +115,6 @@ void ADMBaseTrap::OnOverlapBegin(
 
 	LastTriggerTimes.Add(Character, Now);
 	ApplyTrapEffect(Character);
-	bTriggered = true;
 	MulticastTrapTriggered(Character);
 
 	if (bDestroyAfterTrigger)
@@ -137,33 +148,64 @@ void ADMBaseTrap::ApplyTrapEffect(ADMBaseCharacter* Character)
 
 void ADMBaseTrap::MulticastTrapTriggered_Implementation(ADMBaseCharacter* Character)
 {
-	bTriggered = true;
 	UpdateLocalVisibility();
-	OnTrapTriggered(Character);
+
+	if (ShouldShowTrapForLocalPlayer())
+	{
+		OnTrapTriggered(Character);
+	}
 }
 
-void ADMBaseTrap::UpdateLocalVisibility()
+void ADMBaseTrap::OnRep_PlacedBy()
 {
-	if (TrapMesh == nullptr)
+	UpdateLocalVisibility();
+}
+
+bool ADMBaseTrap::WasPlacedBy(const ADMBaseCharacter* Character) const
+{
+	if (Character == nullptr)
 	{
-		return;
+		return false;
 	}
 
-	TrapMesh->SetVisibility(ShouldShowTrapForLocalPlayer(), true);
-}
-
-bool ADMBaseTrap::ShouldShowTrapForLocalPlayer() const
-{
-	if (!bHiddenFromEnemiesUntilTriggered || bTriggered)
+	if (Character == PlacedByCharacter.Get())
 	{
 		return true;
 	}
 
+	const APlayerState* CharacterPlayerState = Character->GetPlayerState();
+	return CharacterPlayerState != nullptr && CharacterPlayerState == PlacedByPlayerState.Get();
+}
+
+void ADMBaseTrap::UpdateLocalVisibility()
+{
+	const bool bVisible = ShouldShowTrapForLocalPlayer();
+
+	TArray<UPrimitiveComponent*> PrimitiveComponents;
+	GetComponents(PrimitiveComponents);
+
+	for (UPrimitiveComponent* Component : PrimitiveComponents)
+	{
+		if (Component != nullptr && Component != TriggerBox)
+		{
+			Component->SetVisibility(bVisible, true);
+		}
+	}
+}
+
+bool ADMBaseTrap::ShouldShowTrapForLocalPlayer() const
+{
 	const APawn* LocalPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (LocalPawn == nullptr)
 	{
 		return false;
 	}
 
-	return LocalPawn == PlacedByCharacter.Get();
+	if (LocalPawn == PlacedByCharacter.Get() || LocalPawn == GetOwner())
+	{
+		return true;
+	}
+
+	const APlayerState* LocalPlayerState = LocalPawn->GetPlayerState();
+	return LocalPlayerState != nullptr && LocalPlayerState == PlacedByPlayerState.Get();
 }

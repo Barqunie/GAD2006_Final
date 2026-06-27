@@ -14,6 +14,14 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
+namespace
+{
+	FSlateColor GetSkillReadyColor(bool bReady)
+	{
+		return FSlateColor(bReady ? FLinearColor(0.15f, 1.f, 0.25f, 1.f) : FLinearColor(1.f, 0.08f, 0.06f, 1.f));
+	}
+}
+
 void ADMPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -44,6 +52,7 @@ void ADMPlayerController::SetupInputComponent()
 	{
 		InputComponent->BindAction(TEXT("Scoreboard"), IE_Pressed, this, &ADMPlayerController::ShowScoreboard);
 		InputComponent->BindAction(TEXT("Scoreboard"), IE_Released, this, &ADMPlayerController::HideScoreboard);
+		InputComponent->BindAction(TEXT("PauseMenu"), IE_Pressed, this, &ADMPlayerController::TogglePauseMenu);
 	}
 }
 
@@ -286,6 +295,40 @@ FText ADMPlayerController::GetHUDTrapText() const
 		DMCharacter->GetAvailableTrapDisplayName());
 }
 
+float ADMPlayerController::GetHUDSkillQCooldownPercent() const
+{
+	const ADMBaseCharacter* DMCharacter = GetControlledDMCharacter();
+	return DMCharacter ? DMCharacter->GetSkillQCooldownPercent() : 0.f;
+}
+
+float ADMPlayerController::GetHUDSkillECooldownPercent() const
+{
+	const ADMBaseCharacter* DMCharacter = GetControlledDMCharacter();
+	return DMCharacter ? DMCharacter->GetSkillECooldownPercent() : 0.f;
+}
+
+FText ADMPlayerController::GetHUDSkillQCooldownText() const
+{
+	return FText::GetEmpty();
+}
+
+FText ADMPlayerController::GetHUDSkillECooldownText() const
+{
+	return FText::GetEmpty();
+}
+
+FSlateColor ADMPlayerController::GetHUDSkillQTextColor() const
+{
+	const ADMBaseCharacter* DMCharacter = GetControlledDMCharacter();
+	return GetSkillReadyColor(DMCharacter != nullptr && DMCharacter->IsSkillQReady());
+}
+
+FSlateColor ADMPlayerController::GetHUDSkillETextColor() const
+{
+	const ADMBaseCharacter* DMCharacter = GetControlledDMCharacter();
+	return GetSkillReadyColor(DMCharacter != nullptr && DMCharacter->IsSkillEReady());
+}
+
 TArray<FDMScoreboardRow> ADMPlayerController::GetHUDScoreboardRows() const
 {
 	TArray<FDMScoreboardRow> Rows;
@@ -456,8 +499,76 @@ void ADMPlayerController::HideScoreboard()
 	OnScoreboardVisibilityChanged(false);
 }
 
+void ADMPlayerController::TogglePauseMenu()
+{
+	if (bPauseMenuVisible)
+	{
+		HidePauseMenu();
+		return;
+	}
+
+	ShowPauseMenu();
+}
+
+void ADMPlayerController::ShowPauseMenu()
+{
+	if (!IsLocalController() || bPauseMenuVisible || bEndScreenVisible || PauseMenuClass == nullptr)
+	{
+		return;
+	}
+
+	if (PauseMenuWidget == nullptr)
+	{
+		PauseMenuWidget = CreateWidget<UUserWidget>(this, PauseMenuClass);
+	}
+
+	if (PauseMenuWidget && !PauseMenuWidget->IsInViewport())
+	{
+		PauseMenuWidget->AddToViewport(PauseMenuZOrder);
+	}
+
+	bPauseMenuVisible = true;
+	bShowMouseCursor = true;
+	SetIgnoreMoveInput(true);
+	SetIgnoreLookInput(true);
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
+
+	OnPauseMenuVisibilityChanged(true);
+}
+
+void ADMPlayerController::HidePauseMenu()
+{
+	if (!IsLocalController() || !bPauseMenuVisible)
+	{
+		return;
+	}
+
+	bPauseMenuVisible = false;
+
+	if (PauseMenuWidget)
+	{
+		PauseMenuWidget->RemoveFromParent();
+	}
+
+	if (!bEndScreenVisible)
+	{
+		bShowMouseCursor = false;
+		SetIgnoreMoveInput(false);
+		SetIgnoreLookInput(false);
+
+		FInputModeGameOnly InputMode;
+		SetInputMode(InputMode);
+	}
+
+	OnPauseMenuVisibilityChanged(false);
+}
+
 void ADMPlayerController::ClientUseMatchInputMode_Implementation()
 {
+	HidePauseMenu();
 	bShowMouseCursor = false;
 	SetIgnoreMoveInput(false);
 	SetIgnoreLookInput(false);
@@ -515,6 +626,7 @@ void ADMPlayerController::ClientShowEndScreen_Implementation()
 		return;
 	}
 
+	HidePauseMenu();
 	bEndScreenVisible = true;
 
 	if (EndScreenClass && EndScreenWidget == nullptr)

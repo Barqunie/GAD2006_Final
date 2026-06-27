@@ -7,6 +7,7 @@
 #include "DMBaseTrap.generated.h"
 
 class ADMBaseCharacter;
+class APlayerState;
 class UBoxComponent;
 class USceneComponent;
 class UStaticMeshComponent;
@@ -79,10 +80,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Trap")
 	bool bCanTriggerOwner = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Trap")
-	bool bHiddenFromEnemiesUntilTriggered = true;
-
 protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	UFUNCTION()
 	void OnOverlapBegin(
 		UPrimitiveComponent* OverlappedComponent,
@@ -94,10 +94,19 @@ protected:
 	);
 
 	TMap<TWeakObjectPtr<ADMBaseCharacter>, float> LastTriggerTimes;
-	TWeakObjectPtr<ADMBaseCharacter> PlacedByCharacter;
-	float SpawnWorldTime = 0.f;
-	bool bTriggered = false;
 
+	UPROPERTY(ReplicatedUsing = OnRep_PlacedBy)
+	TObjectPtr<ADMBaseCharacter> PlacedByCharacter;
+
+	UPROPERTY(ReplicatedUsing = OnRep_PlacedBy)
+	TObjectPtr<APlayerState> PlacedByPlayerState;
+
+	float SpawnWorldTime = 0.f;
+
+	UFUNCTION()
+	void OnRep_PlacedBy();
+
+	bool WasPlacedBy(const ADMBaseCharacter* Character) const;
 	void UpdateLocalVisibility();
 	bool ShouldShowTrapForLocalPlayer() const;
 

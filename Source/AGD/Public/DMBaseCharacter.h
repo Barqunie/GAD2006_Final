@@ -9,6 +9,7 @@
 #include "DMBaseCharacter.generated.h"
 
 class ADMBaseWeapon;
+class ADMDamageTextActor;
 class ADMBaseTrap;
 class UAnimMontage;
 class UCameraComponent;
@@ -70,6 +71,24 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "DM|Trap")
 	FText GetAvailableTrapDisplayName() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|Skills")
+	float GetSkillQCooldownRemaining() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|Skills")
+	float GetSkillECooldownRemaining() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|Skills")
+	float GetSkillQCooldownPercent() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|Skills")
+	float GetSkillECooldownPercent() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|Skills")
+	bool IsSkillQReady() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|Skills")
+	bool IsSkillEReady() const;
 
 	UFUNCTION(BlueprintPure, Category = "DM|Weapon|IK")
 	bool GetWeaponLeftHandIKTransform(FVector& OutLocation, FRotator& OutRotation) const;
@@ -287,6 +306,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Combat")
 	float MaxHealth = 100.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Combat|Damage Text")
+	bool bShowDamageText = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Combat|Damage Text")
+	TSubclassOf<ADMDamageTextActor> DamageTextClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Combat|Damage Text")
+	FVector DamageTextOffset = FVector(0.f, 0.f, 115.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Combat|Damage Text", meta = (ClampMin = "0.0"))
+	float DamageTextSideSpread = 35.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DM|Combat|Damage Text", meta = (ClampMin = "0.0"))
+	float DamageTextForwardSpread = 12.f;
+
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "DM|Combat|Runtime")
 	float Health = 100.f;
 
@@ -443,6 +477,9 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastHandleDeath();
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastShowDamageText(float DamageAmount, FVector_NetQuantize DamageLocation, bool bFatalHit);
+
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSpeedBoostStarted(float SpeedMultiplier, float JumpMultiplier, float Duration);
 
@@ -466,6 +503,8 @@ protected:
 
 	void SpawnDefaultWeapon();
 	bool CanUseSkill(float LastUseTime, float Cooldown) const;
+	float GetSkillCooldownRemaining(float LastUseTime, float Cooldown) const;
+	float GetSkillCooldownPercent(float LastUseTime, float Cooldown) const;
 	bool CanPlaceTrap() const;
 	FString ResolveTrapDisplayName(TSubclassOf<ADMBaseTrap> TrapClass) const;
 	bool FindTrapPlacementTransform(FTransform& OutTransform) const;

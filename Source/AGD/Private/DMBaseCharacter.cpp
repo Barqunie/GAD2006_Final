@@ -3,6 +3,7 @@
 
 #include "DMBaseCharacter.h"
 
+#include "DMDamageTextActor.h"
 #include "DMBaseTrap.h"
 #include "DMBaseWeapon.h"
 #include "DMGameMode.h"
@@ -732,11 +733,31 @@ void ADMBaseCharacter::ServerPlaceTrap_Implementation()
 
 void ADMBaseCharacter::UseSkillQ()
 {
+	if (!CanUseSkill(LastSkillQTime, GetSkillQCooldown()))
+	{
+		return;
+	}
+
+	if (!HasAuthority() && GetWorld())
+	{
+		LastSkillQTime = GetWorld()->GetTimeSeconds();
+	}
+
 	ServerUseSkillQ();
 }
 
 void ADMBaseCharacter::UseSkillE()
 {
+	if (!CanUseSkill(LastSkillETime, GetSkillECooldown()))
+	{
+		return;
+	}
+
+	if (!HasAuthority() && GetWorld())
+	{
+		LastSkillETime = GetWorld()->GetTimeSeconds();
+	}
+
 	ServerUseSkillE();
 }
 
@@ -744,6 +765,58 @@ bool ADMBaseCharacter::CanUseSkill(float LastUseTime, float Cooldown) const
 {
 	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
 	return !bIsDead && Now - LastUseTime >= Cooldown;
+}
+
+float ADMBaseCharacter::GetSkillCooldownRemaining(float LastUseTime, float Cooldown) const
+{
+	if (Cooldown <= 0.f)
+	{
+		return 0.f;
+	}
+
+	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
+	return FMath::Max(0.f, Cooldown - (Now - LastUseTime));
+}
+
+float ADMBaseCharacter::GetSkillCooldownPercent(float LastUseTime, float Cooldown) const
+{
+	if (Cooldown <= 0.f)
+	{
+		return 1.f;
+	}
+
+	const float Remaining = GetSkillCooldownRemaining(LastUseTime, Cooldown);
+	return FMath::Clamp(1.f - (Remaining / Cooldown), 0.f, 1.f);
+}
+
+float ADMBaseCharacter::GetSkillQCooldownRemaining() const
+{
+	return GetSkillCooldownRemaining(LastSkillQTime, GetSkillQCooldown());
+}
+
+float ADMBaseCharacter::GetSkillECooldownRemaining() const
+{
+	return GetSkillCooldownRemaining(LastSkillETime, GetSkillECooldown());
+}
+
+float ADMBaseCharacter::GetSkillQCooldownPercent() const
+{
+	return GetSkillCooldownPercent(LastSkillQTime, GetSkillQCooldown());
+}
+
+float ADMBaseCharacter::GetSkillECooldownPercent() const
+{
+	return GetSkillCooldownPercent(LastSkillETime, GetSkillECooldown());
+}
+
+bool ADMBaseCharacter::IsSkillQReady() const
+{
+	return CanUseSkill(LastSkillQTime, GetSkillQCooldown());
+}
+
+bool ADMBaseCharacter::IsSkillEReady() const
+{
+	return CanUseSkill(LastSkillETime, GetSkillECooldown());
 }
 
 void ADMBaseCharacter::ServerUseSkillQ_Implementation()
@@ -998,6 +1071,12 @@ void ADMBaseCharacter::TakeWeaponDamage(float DamageAmount, ADMPlayerState* Atta
 	const float FinalDamage = ModifyIncomingDamage(DamageAmount);
 	Health = FMath::Clamp(Health - FinalDamage, 0.f, MaxHealth);
 	OnHealthChanged();
+
+	const FVector RandomDamageTextOffset =
+		(GetActorRightVector() * FMath::RandRange(-DamageTextSideSpread, DamageTextSideSpread)) +
+		(GetActorForwardVector() * FMath::RandRange(-DamageTextForwardSpread, DamageTextForwardSpread));
+
+	MulticastShowDamageText(FinalDamage, GetActorLocation() + DamageTextOffset + RandomDamageTextOffset, Health <= 0.f);
 
 	if (Health > 0.f)
 	{
@@ -1426,6 +1505,30 @@ void ADMBaseCharacter::MulticastHandleDeath_Implementation()
 	}
 
 	OnDeath();
+}
+
+void ADMBaseCharacter::MulticastShowDamageText_Implementation(float DamageAmount, FVector_NetQuantize DamageLocation, bool bFatalHit)
+{
+	if (!bShowDamageText || DamageAmount <= 0.f || GetWorld() == nullptr)
+	{
+		return;
+	}
+
+	TSubclassOf<ADMDamageTextActor> TextClass = DamageTextClass;
+	if (!TextClass)
+	{
+		TextClass = ADMDamageTextActor::StaticClass();
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ADMDamageTextActor* DamageText = GetWorld()->SpawnActor<ADMDamageTextActor>(TextClass, DamageLocation, FRotator::ZeroRotator, SpawnParams);
+	if (DamageText)
+	{
+		DamageText->SetDamageAmount(DamageAmount, bFatalHit);
+	}
 }
 
 void ADMBaseCharacter::MulticastSpeedBoostStarted_Implementation(float SpeedMultiplier, float JumpMultiplier, float Duration)

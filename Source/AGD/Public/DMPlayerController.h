@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/SlateWrapperTypes.h"
 #include "GameFramework/PlayerController.h"
+#include "Styling/SlateColor.h"
 #include "DMTypes.h"
 #include "DMPlayerController.generated.h"
 
@@ -74,6 +75,24 @@ public:
 	UFUNCTION(BlueprintPure, Category = "DM|HUD")
 	FText GetHUDTrapText() const;
 
+	UFUNCTION(BlueprintPure, Category = "DM|HUD|Skills")
+	float GetHUDSkillQCooldownPercent() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|HUD|Skills")
+	float GetHUDSkillECooldownPercent() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|HUD|Skills")
+	FText GetHUDSkillQCooldownText() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|HUD|Skills")
+	FText GetHUDSkillECooldownText() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|HUD|Skills")
+	FSlateColor GetHUDSkillQTextColor() const;
+
+	UFUNCTION(BlueprintPure, Category = "DM|HUD|Skills")
+	FSlateColor GetHUDSkillETextColor() const;
+
 	UFUNCTION(BlueprintPure, Category = "DM|HUD")
 	TArray<FDMScoreboardRow> GetHUDScoreboardRows() const;
 
@@ -110,6 +129,18 @@ public:
 	UFUNCTION(BlueprintPure, Category = "DM|HUD")
 	bool DidLocalPlayerWin() const;
 
+	UFUNCTION(BlueprintCallable, Category = "DM|Menu")
+	void TogglePauseMenu();
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Menu")
+	void ShowPauseMenu();
+
+	UFUNCTION(BlueprintCallable, Category = "DM|Menu")
+	void HidePauseMenu();
+
+	UFUNCTION(BlueprintPure, Category = "DM|Menu")
+	bool IsPauseMenuVisible() const { return bPauseMenuVisible; }
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "DM|HUD")
 	void OnScoreboardVisibilityChanged(bool bVisible);
 
@@ -121,6 +152,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "DM|HUD")
 	void OnEndScreenVisibilityChanged(bool bVisible, bool bVictory);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "DM|Menu")
+	void OnPauseMenuVisibilityChanged(bool bVisible);
 
 	UFUNCTION(Server, Reliable)
 	void ServerSubmitPlayerInfo(FDMPlayerInfo Info);
@@ -162,6 +196,15 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "DM|HUD")
 	TObjectPtr<UUserWidget> EndScreenWidget;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DM|Menu")
+	TSubclassOf<UUserWidget> PauseMenuClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DM|Menu")
+	int32 PauseMenuZOrder = 80;
+
+	UPROPERTY(BlueprintReadOnly, Category = "DM|Menu")
+	TObjectPtr<UUserWidget> PauseMenuWidget;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DM|Effects")
 	TSubclassOf<UUserWidget> BlindnessWidgetClass;
 
@@ -181,5 +224,6 @@ private:
 	bool bScoreboardVisible = false;
 	bool bIsBlinded = false;
 	bool bEndScreenVisible = false;
+	bool bPauseMenuVisible = false;
 	FTimerHandle BlindnessTimerHandle;
 };
