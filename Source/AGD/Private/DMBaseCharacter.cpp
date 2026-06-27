@@ -19,6 +19,40 @@
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 
+namespace
+{
+	FString BuildTrapDisplayNameFromClass(TSubclassOf<ADMBaseTrap> TrapClass)
+	{
+		if (TrapClass == nullptr)
+		{
+			return FString();
+		}
+
+		FString DisplayName = TrapClass->GetName();
+		DisplayName.RemoveFromStart(TEXT("BP_"));
+		DisplayName.RemoveFromEnd(TEXT("_C"));
+		DisplayName.RemoveFromEnd(TEXT("_Trap"));
+		DisplayName.RemoveFromEnd(TEXT("Trap"));
+		DisplayName.ReplaceInline(TEXT("_"), TEXT(" "));
+		DisplayName.TrimStartAndEndInline();
+
+		if (DisplayName.Equals(TEXT("DMBase"), ESearchCase::IgnoreCase))
+		{
+			return FString(TEXT("Damage"));
+		}
+
+		return DisplayName.IsEmpty() ? FString(TEXT("Trap")) : DisplayName;
+	}
+
+	bool IsGenericTrapDisplayName(const FString& DisplayName)
+	{
+		const FString CleanDisplayName = DisplayName.TrimStartAndEnd();
+		return CleanDisplayName.IsEmpty()
+			|| CleanDisplayName.Equals(TEXT("Trap"), ESearchCase::IgnoreCase)
+			|| CleanDisplayName.Equals(TEXT("DMBase"), ESearchCase::IgnoreCase);
+	}
+}
+
 // Sets default values
 ADMBaseCharacter::ADMBaseCharacter()
 {
@@ -1025,7 +1059,8 @@ void ADMBaseCharacter::SetAvailableTrapClass(TSubclassOf<ADMBaseTrap> NewTrapCla
 void ADMBaseCharacter::SetAvailableTrap(TSubclassOf<ADMBaseTrap> NewTrapClass, FText DisplayName)
 {
 	DefaultTrapClass = NewTrapClass;
-	AvailableTrapDisplayName = DisplayName.ToString().IsEmpty() ? ResolveTrapDisplayName(NewTrapClass) : DisplayName.ToString();
+	const FString RequestedDisplayName = DisplayName.ToString();
+	AvailableTrapDisplayName = IsGenericTrapDisplayName(RequestedDisplayName) ? ResolveTrapDisplayName(NewTrapClass) : RequestedDisplayName;
 	OnTrapClassChanged(DefaultTrapClass);
 }
 
@@ -1036,7 +1071,7 @@ bool ADMBaseCharacter::HasAvailableTrap() const
 
 FText ADMBaseCharacter::GetAvailableTrapDisplayName() const
 {
-	if (AvailableTrapDisplayName.IsEmpty())
+	if (IsGenericTrapDisplayName(AvailableTrapDisplayName))
 	{
 		const FString ResolvedName = ResolveTrapDisplayName(DefaultTrapClass);
 		return ResolvedName.IsEmpty() ? FText::FromString(TEXT("No Trap")) : FText::FromString(ResolvedName);
@@ -1055,15 +1090,16 @@ FString ADMBaseCharacter::ResolveTrapDisplayName(TSubclassOf<ADMBaseTrap> TrapCl
 	const ADMBaseTrap* TrapDefaults = TrapClass->GetDefaultObject<ADMBaseTrap>();
 	if (TrapDefaults == nullptr)
 	{
-		return TrapClass->GetName();
+		return BuildTrapDisplayNameFromClass(TrapClass);
 	}
 
-	if (!TrapDefaults->TrapDisplayName.IsEmpty())
+	const FString DefaultDisplayName = TrapDefaults->TrapDisplayName.ToString();
+	if (!IsGenericTrapDisplayName(DefaultDisplayName))
 	{
-		return TrapDefaults->TrapDisplayName.ToString();
+		return DefaultDisplayName;
 	}
 
-	return TrapClass->GetName();
+	return BuildTrapDisplayNameFromClass(TrapClass);
 }
 
 bool ADMBaseCharacter::FindTrapPlacementTransform(FTransform& OutTransform) const

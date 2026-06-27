@@ -110,8 +110,7 @@ void ADMBaseWeapon::FireOnce()
 	CurrentAmmo--;
 
 	const FVector MuzzleStart = GetMuzzleStart();
-	const bool bAimToCrosshair = OwningCharacter && OwningCharacter->bIsAiming;
-	FVector Direction = bAimToCrosshair ? (GetCameraAimTarget() - MuzzleStart).GetSafeNormal() : GetMuzzleDirection();
+	FVector Direction = (GetCameraAimTarget() - MuzzleStart).GetSafeNormal();
 	if (Direction.IsNearlyZero())
 	{
 		Direction = GetMuzzleDirection();
