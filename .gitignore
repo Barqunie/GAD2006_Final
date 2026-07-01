@@ -76,4 +76,6 @@ DerivedDataCache/*
 # Unreal content
 Content/
 
+.vsconfig
+
 
