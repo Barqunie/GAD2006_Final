@@ -162,6 +162,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerStartLobbyMatch(const FString& MapName);
 
+	UFUNCTION(Server, Reliable)
+	void ServerStartLobbyMatchWithPlayerInfo(const FString& MapName, FDMPlayerInfo Info);
+
 	UFUNCTION(Client, Reliable)
 	void ClientUseMatchInputMode();
 
@@ -220,6 +223,8 @@ private:
 	void ShowBlindnessWidget();
 	void HideBlindnessWidget();
 	void EndBlindness();
+	void ResetLobbyCharacterSelectionToDefault();
+	void StartLobbyMatchOnServer(const FString& MapName);
 
 	bool bScoreboardVisible = false;
 	bool bIsBlinded = false;
