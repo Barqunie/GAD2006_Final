@@ -73,6 +73,11 @@ UClass* ADMGameMode::GetPawnClassForPlayerState(const ADMPlayerState* State) con
 		}
 	}
 
+	if (SpritCharacterClass)
+	{
+		return SpritCharacterClass;
+	}
+
 	return DefaultPawnClass;
 }
 

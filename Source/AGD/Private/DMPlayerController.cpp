@@ -16,6 +16,17 @@
 
 namespace
 {
+	bool IsLobbyMap(const UObject* WorldContext)
+	{
+		const UWorld* World = WorldContext ? WorldContext->GetWorld() : nullptr;
+		if (World == nullptr)
+		{
+			return false;
+		}
+
+		return World->GetMapName().Contains(TEXT("LobbyMap"));
+	}
+
 	FSlateColor GetSkillReadyColor(bool bReady)
 	{
 		return FSlateColor(bReady ? FLinearColor(0.15f, 1.f, 0.25f, 1.f) : FLinearColor(1.f, 0.08f, 0.06f, 1.f));
@@ -28,6 +39,7 @@ void ADMPlayerController::BeginPlay()
 
 	if (IsLocalController())
 	{
+		ResetLobbyCharacterSelectionToDefault();
 		SubmitLocalPlayerInfo();
 	}
 }
@@ -137,6 +149,24 @@ FDMPlayerInfo ADMPlayerController::GetLocalPlayerInfo() const
 	}
 
 	return FDMPlayerInfo();
+}
+
+void ADMPlayerController::ResetLobbyCharacterSelectionToDefault()
+{
+	if (!IsLocalController() || !IsLobbyMap(this))
+	{
+		return;
+	}
+
+	UDMGameInstance* DMGameInstance = GetGameInstance<UDMGameInstance>();
+	if (DMGameInstance == nullptr)
+	{
+		return;
+	}
+
+	FDMPlayerInfo Info = DMGameInstance->PlayerInfo;
+	Info.CharacterClass = EDMCharacterClass::Sprit;
+	DMGameInstance->SetPlayerInfo(Info);
 }
 
 void ADMPlayerController::UseLobbyCameraByTag(FName CameraTag)
@@ -710,8 +740,15 @@ void ADMPlayerController::HideBlindnessWidget()
 
 void ADMPlayerController::StartLobbyMatch(const FString& MapName)
 {
-	SubmitLocalPlayerInfo();
-	ServerStartLobbyMatch(MapName);
+	FDMPlayerInfo Info = GetLocalPlayerInfo();
+
+	if (UDMGameInstance* DMGameInstance = GetGameInstance<UDMGameInstance>())
+	{
+		DMGameInstance->SetPlayerInfo(Info);
+		Info = DMGameInstance->PlayerInfo;
+	}
+
+	ServerStartLobbyMatchWithPlayerInfo(MapName, Info);
 }
 
 void ADMPlayerController::ServerStartLobbyMatch_Implementation(const FString& MapName)
@@ -721,6 +758,26 @@ void ADMPlayerController::ServerStartLobbyMatch_Implementation(const FString& Ma
 		return;
 	}
 
+	StartLobbyMatchOnServer(MapName);
+}
+
+void ADMPlayerController::ServerStartLobbyMatchWithPlayerInfo_Implementation(const FString& MapName, FDMPlayerInfo Info)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (ADMPlayerState* DMPlayerState = GetPlayerState<ADMPlayerState>())
+	{
+		DMPlayerState->ApplyPlayerInfo(Info);
+	}
+
+	StartLobbyMatchOnServer(MapName);
+}
+
+void ADMPlayerController::StartLobbyMatchOnServer(const FString& MapName)
+{
 	ADMLobbyGameMode* LobbyGameMode = GetWorld() ? GetWorld()->GetAuthGameMode<ADMLobbyGameMode>() : nullptr;
 
 	if (LobbyGameMode)
